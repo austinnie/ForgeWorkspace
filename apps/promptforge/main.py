@@ -1,23 +1,32 @@
-# apps/promptforge/main.py
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""PromptForge - 全链路AI内容创作 (Monorepo 版)"""
+"""PromptForge - Monorepo 启动器"""
 import sys
+import os
 from pathlib import Path
 
-CORE_PATH = Path(__file__).resolve().parent.parent.parent / "forgecore"
+APP_ROOT = Path(__file__).resolve().parent
+if str(APP_ROOT) not in sys.path:
+    sys.path.insert(0, str(APP_ROOT))
+
+CORE_PATH = APP_ROOT.parent.parent / "forgecore"
 if str(CORE_PATH) not in sys.path:
     sys.path.insert(0, str(CORE_PATH))
 
-print("📝 PromptForge 启动，正在加载 ForgeCore...")
+for extra in ["core", "config", "skills"]:
+    p = APP_ROOT / extra
+    if p.exists() and str(p) not in sys.path:
+        sys.path.insert(0, str(p))
 
-try:
-    # 这里可以导入 forgecore 的 LLM 路由或 Export 模块
-    # from forgecore.llm.router import SkillRouter
-    # from forgecore.export.markdown import MarkdownExporter
-    
-    print("✅ PromptForge 核心模块加载就绪！")
-    print("💡 提示：现在您可以将旧版的 skill 路由逻辑迁移到 apps/promptforge/skills/ 中，并调用 forgecore 的导出功能。")
+ENV_PATH = APP_ROOT.parent.parent / ".env"
+if ENV_PATH.exists():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(ENV_PATH)
+    except ImportError:
+        pass
 
-except Exception as e:
-    print(f"❌ 运行失败: {e}")
+print("=" * 60)
+print("🚀 正在启动: PromptForge")
+print("=" * 60)
+print("✅ PromptForge 环境就绪，请使用 CLI 或 FastAPI 启动。")
