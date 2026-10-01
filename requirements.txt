@@ -1,0 +1,6 @@
+# ForgeWorkspace 全局依赖
+requests
+Pillow
+python-dotenv
+tiktoken
+python-docx
