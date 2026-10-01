@@ -1,46 +1,25 @@
-"""API 图像生成引擎"""
+# ==========================================
+# [AUTO-GENERATED] API 引擎统一代理网关
+# 本文件已清空具体实现，所有引擎统一从 ForgeCore 基盘导入
+# ==========================================
+import sys
+from pathlib import Path
 
-from .tongyi import TongyiEngine
-from .yige import YigeEngine
-from .hunyuan import HunyuanEngine
-from .huggingface import HuggingFaceEngine
+# 1. 确保 ForgeCore 根目录在 sys.path 中
+_fc_root = Path(__file__).resolve().parent.parent.parent / "forgecore"
+if str(_fc_root) not in sys.path:
+    sys.path.insert(0, str(_fc_root))
 
-
-def create_api_engine(provider: str, config: dict):
-    """创建 API 引擎实例"""
-    
-    if provider == "tongyi":
-        return TongyiEngine(
-            api_key=config.get("TONGYI_API_KEY"),
-            model=config.get("TONGYI_MODEL", "wanx-v1")
-        )
-    
-    elif provider == "yige":
-        return YigeEngine(
-            api_key=config.get("YIGE_API_KEY"),
-            secret_key=config.get("YIGE_SECRET_KEY")
-        )
-    
-    elif provider == "hunyuan":
-        return HunyuanEngine(
-            secret_id=config.get("HUNYUAN_SECRET_ID"),
-            secret_key=config.get("HUNYUAN_SECRET_KEY")
-        )
-    
-    elif provider == "huggingface":
-        return HuggingFaceEngine(
-            api_token=config.get("HF_API_TOKEN"),
-            model=config.get("HF_MODEL", "sdxl")
-        )
-    
-    else:
-        raise ValueError(f"不支持的 API 提供商: {provider}")
-
-
-__all__ = [
-    'TongyiEngine',
-    'YigeEngine', 
-    'HunyuanEngine',
-    'HuggingFaceEngine',
-    'create_api_engine',
-]
+# 2. 统一从 ForgeCore 导入所有 API 引擎
+try:
+    from forgecore.engines import *
+    from forgecore.engines import create_engine, create_api_engine
+    from forgecore.engines import (
+        BaseEngine, TongyiEngine, YigeEngine, HunyuanEngine, 
+        HuggingFaceEngine, PollinationsEngine, AgnesEngine, 
+        FreeAPIEngine, ReplicateEngine, StabilityEngine,
+        SiliconFlowEngine, OpenRouterEngine, FreeMultimodalProxyEngine, FreeLLMAPIEngine
+    )
+except ImportError as e:
+    print(f"️ 从 ForgeCore 导入 API 引擎失败: {e}")
+    print(" 请检查 forgecore/forgecore/engines/ 目录是否完整。")

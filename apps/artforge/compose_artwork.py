@@ -35,30 +35,22 @@ from typing import Dict, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
-# 🔥 [AUTO-INJECTED] 强制优先使用 shared_assets 中的小篆/印章字体
-def _get_zhuan_seal_font(fallback_size=40):
-    font_dir = r"E:\SD_OpenVINO\ForgeWorkspace\shared_assets\fonts"
-    keywords = ['zhuan', 'seal', '篆', 'small', '印']
-    
-    if os.path.exists(font_dir):
-        for f in os.listdir(font_dir):
-            if f.lower().endswith(('.ttf', '.ttc', '.otf')):
-                if any(kw in f.lower() for kw in keywords):
-                    return os.path.join(font_dir, f)
-    
-    # 兜底：尝试系统常见楷体/宋体
-    for sys_font in ["C:/Windows/Fonts/simkai.ttf", "C:/Windows/Fonts/simsun.ttc"]:
-        if os.path.exists(sys_font):
-            return sys_font
-            
-    return None # 将使用 PIL 默认字体
-
-
-
 # ============================================================
 # 个人配置（请修改为你的名字）
 # ============================================================
-ARTIST_NAME = "东方艺术"  # ✅ 改成你的名字
+ARTIST_NAME = "东方艺术"
+
+# 🎯 精准指定小篆字体路径 (相对路径，兼容 Monorepo 结构)
+MINI_ZHUAN_FONT = Path(__file__).resolve().parent.parent / "shared_assets" / "fonts" / "Mini_zhuan.ttf"
+
+
+# 🎯 精准指定小篆字体路径 (相对路径，兼容 Monorepo 结构)
+MINI_ZHUAN_FONT = Path(__file__).resolve().parent.parent / "shared_assets" / "fonts" / "Mini_zhuan.ttf"
+
+
+# 🎯 精准指定小篆字体路径 (相对路径，兼容 Monorepo 结构)
+MINI_ZHUAN_FONT = Path(__file__).resolve().parent.parent / "shared_assets" / "fonts" / "Mini_zhuan.ttf"
+  # ✅ 改成你的名字
 
 
 # ============================================================
@@ -101,6 +93,7 @@ class InscriptionRenderer:
     """把题词文本竖排渲染到画面上"""
 
     FONT_CANDIDATES = [
+        MINI_ZHUAN_FONT,  # 第一优先级：强制使用小篆字体
         PROJECT_ROOT / "assets" / "fonts" / "calligraphy.ttf",
         PROJECT_ROOT / "assets" / "fonts" / "kai.ttf",
         Path("C:/Windows/Fonts/simkai.ttf"),
@@ -124,7 +117,7 @@ class InscriptionRenderer:
     def _load_font(self, size: int) -> ImageFont.FreeTypeFont:
         if self.font_path:
             try:
-                return ImageFont.truetype(_get_zhuan_seal_font(str(self.font_path)), size)
+                return ImageFont.truetype(str(self.font_path), size)
             except Exception:
                 pass
         return ImageFont.load_default()

@@ -24,26 +24,6 @@ from typing import Optional, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont
 
-# 🔥 [AUTO-INJECTED] 强制优先使用 shared_assets 中的小篆/印章字体
-def _get_zhuan_seal_font(fallback_size=40):
-    font_dir = r"E:\SD_OpenVINO\ForgeWorkspace\shared_assets\fonts"
-    keywords = ['zhuan', 'seal', '篆', 'small', '印']
-    
-    if os.path.exists(font_dir):
-        for f in os.listdir(font_dir):
-            if f.lower().endswith(('.ttf', '.ttc', '.otf')):
-                if any(kw in f.lower() for kw in keywords):
-                    return os.path.join(font_dir, f)
-    
-    # 兜底：尝试系统常见楷体/宋体
-    for sys_font in ["C:/Windows/Fonts/simkai.ttf", "C:/Windows/Fonts/simsun.ttc"]:
-        if os.path.exists(sys_font):
-            return sys_font
-            
-    return None # 将使用 PIL 默认字体
-
-
-
 # ============================================================
 # 路径 & 字体
 # ============================================================
@@ -126,7 +106,7 @@ class SealGenerator:
         zhuan_font = PROJECT_ROOT / "assets" / "fonts" / "Mini_zhuan.ttf"
         if zhuan_font.exists():
             try:
-                f = ImageFont.truetype(_get_zhuan_seal_font(str(zhuan_font)), size)
+                f = ImageFont.truetype(None), size)
                 if self._has_all_glyphs(f, "东方艺术"):
                     return f
                 else:
@@ -137,7 +117,7 @@ class SealGenerator:
         # 2. __init__ 指定的字体
         if self.font_path and Path(self.font_path).exists():
             try:
-                return ImageFont.truetype(_get_zhuan_seal_font(str(self.font_path)), size)
+                return ImageFont.truetype(None), size)
             except Exception:
                 pass
 
@@ -145,7 +125,7 @@ class SealGenerator:
         for p in FONT_CANDIDATES:
             if p.exists():
                 try:
-                    return ImageFont.truetype(_get_zhuan_seal_font(str(p)), size)
+                    return ImageFont.truetype(None), size)
                 except Exception:
                     continue
 
