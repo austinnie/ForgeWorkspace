@@ -1,50 +1,64 @@
 # ============================================================
-# ForgeWorkspace 专属忽略规则
+# ForgeWorkspace .gitignore
 # ============================================================
 
-# 1. 全局输出目录 (所有 App 生成的图片、临时文件)
+# --- 运行时输出 (绝对不提交) ---
 output/
 apps/*/output/
 temp_gather/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.mp4
 
-# 2. 敏感配置 (绝对不要提交 API Key！)
+# 保留 .gitkeep (用于保持空目录结构)
+!apps/*/.gitkeep
+!**/.gitkeep
+
+# --- 敏感配置 (绝对不提交 API Key!) ---
 .env
 .env.local
 *.local.json
 
-# 3. Python 运行时缓存
+# --- Python 缓存 ---
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 
-# 4. 虚拟环境 (不要提交几百MB的 venv)
+# --- 虚拟环境 ---
 venv/
 .venv/
 env/
 ENV/
 
-# 5. IDE 和编辑器配置
+# --- IDE ---
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# 6. 日志和临时文件
-*.log
-*.tmp
-*.bak
+# --- 系统垃圾 ---
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# 7. AI 模型文件 (如果以后在 shared_assets 放模型，必须忽略)
+# --- AI 模型文件 (太大) ---
 *.safetensors
 *.ckpt
 *.bin
 *.pth
 *.onnx
 
-# 8. 代码收集工具生成的临时报告 (如果有的话)
+# --- 日志 ---
+*.log
+*.tmp
+*.bak
+
+# --- 代码收集工具输出 ---
 project_snapshot_*.txt
+project_code_dump.txt

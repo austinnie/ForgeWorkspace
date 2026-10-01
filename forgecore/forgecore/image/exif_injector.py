@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger('forgecore.image.exif')
 # utils/exif_injector.py
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
@@ -15,7 +17,8 @@ import random
 from typing import Optional, Dict, Literal
 
 
-from utils.logger import get_logger
+# [ForgeCore] 旧依赖已移除
+# from utils.logger import get_logger
 
 logger = get_logger(__name__)
 # ============================================================
