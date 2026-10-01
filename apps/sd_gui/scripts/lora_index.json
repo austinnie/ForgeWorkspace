@@ -1,19 +1,17 @@
 {
-  "project_root": "E:/SD_OpenVINO",
+  "project_root": "E:/SD_OpenVINO/ForgeWorkspace/apps/sd_gui",
   "lora_dirs": {
-    "dir_0": "E:\\SD_OpenVINO\\models\\sdxl-lora",
-    "dir_1": "E:\\SD_OpenVINO\\models\\vae",
-    "dir_2": "E:\\SD_OpenVINO\\models\\sd15-lora",
-    "dir_3": "E:\\SD_OpenVINO\\models\\controlnet\\models--CIDAS--clipseg-rd64-refined\\snapshots\\999e0328d9e10b484360c477313983f9afdd7050"
+    "E:\\SD_OpenVINO\\models\\sd15-lora": "E:\\SD_OpenVINO\\models\\sd15-lora",
+    "E:\\SD_OpenVINO\\models\\sdxl-lora": "E:\\SD_OpenVINO\\models\\sdxl-lora"
   },
-  "total_loras": 258,
+  "total_loras": 254,
   "loras": [
     {
       "name": "airi_shadowstrike",
       "filename": "airi_shadowstrike.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/airi_shadowstrike.safetensors",
+      "path": "sd15-lora/airi_shadowstrike.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/airi_shadowstrike.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -27,7 +25,7 @@
       "filename": "akiryomai_realistic.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/akiryomai_realistic.safetensors",
+      "path": "sd15-lora/akiryomai_realistic.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/akiryomai_realistic.safetensors",
       "size_mb": 39.9,
       "tags": [
@@ -41,7 +39,7 @@
       "filename": "alessandra.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/alessandra.safetensors",
+      "path": "sd15-lora/alessandra.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/alessandra.safetensors",
       "size_mb": 18.12,
       "tags": [
@@ -55,7 +53,7 @@
       "filename": "AMechaSSS.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/AMechaSSS.safetensors",
+      "path": "sd15-lora/AMechaSSS.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/AMechaSSS.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -69,7 +67,7 @@
       "filename": "angie.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/angie.safetensors",
+      "path": "sd15-lora/angie.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/angie.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -83,7 +81,7 @@
       "filename": "anne_mary.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/anne_mary.safetensors",
+      "path": "sd15-lora/anne_mary.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/anne_mary.safetensors",
       "size_mb": 35.01,
       "tags": [
@@ -97,7 +95,7 @@
       "filename": "arachi.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/arachi.safetensors",
+      "path": "sd15-lora/arachi.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/arachi.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -111,7 +109,7 @@
       "filename": "arboliva.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/arboliva.safetensors",
+      "path": "sd15-lora/arboliva.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/arboliva.safetensors",
       "size_mb": 18.12,
       "tags": [
@@ -125,7 +123,7 @@
       "filename": "asian_beauty.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/asian_beauty.safetensors",
+      "path": "sd15-lora/asian_beauty.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/asian_beauty.safetensors",
       "size_mb": 82.06,
       "tags": [
@@ -139,7 +137,7 @@
       "filename": "ayane.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/ayane.safetensors",
+      "path": "sd15-lora/ayane.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/ayane.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -153,7 +151,7 @@
       "filename": "barghest_swim.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/barghest_swim.safetensors",
+      "path": "sd15-lora/barghest_swim.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/barghest_swim.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -167,7 +165,7 @@
       "filename": "beauty_masters.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/beauty_masters.safetensors",
+      "path": "sd15-lora/beauty_masters.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/beauty_masters.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -181,7 +179,7 @@
       "filename": "belle.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/belle.safetensors",
+      "path": "sd15-lora/belle.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/belle.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -195,7 +193,7 @@
       "filename": "better_cleavage.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/better_cleavage.safetensors",
+      "path": "sd15-lora/better_cleavage.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/better_cleavage.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -209,7 +207,7 @@
       "filename": "bgirl.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/bgirl.safetensors",
+      "path": "sd15-lora/bgirl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/bgirl.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -223,7 +221,7 @@
       "filename": "blue_lace_dress.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/blue_lace_dress.safetensors",
+      "path": "sd15-lora/blue_lace_dress.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/blue_lace_dress.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -237,7 +235,7 @@
       "filename": "bsmt.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/bsmt.safetensors",
+      "path": "sd15-lora/bsmt.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/bsmt.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -251,7 +249,7 @@
       "filename": "busty_slider.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/busty_slider.safetensors",
+      "path": "sd15-lora/busty_slider.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/busty_slider.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -265,7 +263,7 @@
       "filename": "cattleya_glory.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/cattleya_glory.safetensors",
+      "path": "sd15-lora/cattleya_glory.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/cattleya_glory.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -279,7 +277,7 @@
       "filename": "cat_maid.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/cat_maid.safetensors",
+      "path": "sd15-lora/cat_maid.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/cat_maid.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -293,7 +291,7 @@
       "filename": "china_dress.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/china_dress.safetensors",
+      "path": "sd15-lora/china_dress.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/china_dress.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -307,7 +305,7 @@
       "filename": "Chinese dragon-000014.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Chinese dragon-000014.safetensors",
+      "path": "sd15-lora/Chinese dragon-000014.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Chinese dragon-000014.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -321,7 +319,7 @@
       "filename": "chunli.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/chunli.safetensors",
+      "path": "sd15-lora/chunli.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/chunli.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -335,7 +333,7 @@
       "filename": "chunli_cos.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/chunli_cos.safetensors",
+      "path": "sd15-lora/chunli_cos.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/chunli_cos.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -349,7 +347,7 @@
       "filename": "chutxkan.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/chutxkan.safetensors",
+      "path": "sd15-lora/chutxkan.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/chutxkan.safetensors",
       "size_mb": 72.14,
       "tags": [
@@ -363,7 +361,7 @@
       "filename": "coco.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/coco.safetensors",
+      "path": "sd15-lora/coco.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/coco.safetensors",
       "size_mb": 144.12,
       "tags": [
@@ -377,7 +375,7 @@
       "filename": "colored_contacts.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/colored_contacts.safetensors",
+      "path": "sd15-lora/colored_contacts.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/colored_contacts.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -391,7 +389,7 @@
       "filename": "comp_swim.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/comp_swim.safetensors",
+      "path": "sd15-lora/comp_swim.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/comp_swim.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -405,7 +403,7 @@
       "filename": "cross_short.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/cross_short.safetensors",
+      "path": "sd15-lora/cross_short.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/cross_short.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -419,7 +417,7 @@
       "filename": "cure_berry_v2.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/cure_berry_v2.safetensors",
+      "path": "sd15-lora/cure_berry_v2.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/cure_berry_v2.safetensors",
       "size_mb": 37.27,
       "tags": [
@@ -433,7 +431,7 @@
       "filename": "cybermaid_melanite.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/cybermaid_melanite.safetensors",
+      "path": "sd15-lora/cybermaid_melanite.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/cybermaid_melanite.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -447,7 +445,7 @@
       "filename": "dcp001.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/dcp001.safetensors",
+      "path": "sd15-lora/dcp001.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/dcp001.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -461,7 +459,7 @@
       "filename": "dcp002.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/dcp002.safetensors",
+      "path": "sd15-lora/dcp002.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/dcp002.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -475,7 +473,7 @@
       "filename": "dolphin_shorts.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/dolphin_shorts.safetensors",
+      "path": "sd15-lora/dolphin_shorts.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/dolphin_shorts.safetensors",
       "size_mb": 9.13,
       "tags": [
@@ -489,7 +487,7 @@
       "filename": "dorothy.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/dorothy.safetensors",
+      "path": "sd15-lora/dorothy.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/dorothy.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -503,7 +501,7 @@
       "filename": "edg_bond.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/edg_bond.safetensors",
+      "path": "sd15-lora/edg_bond.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/edg_bond.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -517,7 +515,7 @@
       "filename": "elysia_cos.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/elysia_cos.safetensors",
+      "path": "sd15-lora/elysia_cos.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/elysia_cos.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -531,7 +529,7 @@
       "filename": "ennezju9.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/ennezju9.safetensors",
+      "path": "sd15-lora/ennezju9.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/ennezju9.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -545,7 +543,7 @@
       "filename": "equitation.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/equitation.safetensors",
+      "path": "sd15-lora/equitation.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/equitation.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -559,7 +557,7 @@
       "filename": "eula.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/eula.safetensors",
+      "path": "sd15-lora/eula.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/eula.safetensors",
       "size_mb": 116.52,
       "tags": [
@@ -573,7 +571,7 @@
       "filename": "eula_noface.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/eula_noface.safetensors",
+      "path": "sd15-lora/eula_noface.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/eula_noface.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -587,7 +585,7 @@
       "filename": "eula_v2.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/eula_v2.safetensors",
+      "path": "sd15-lora/eula_v2.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/eula_v2.safetensors",
       "size_mb": 36.21,
       "tags": [
@@ -601,7 +599,7 @@
       "filename": "eula_v3.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/eula_v3.safetensors",
+      "path": "sd15-lora/eula_v3.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/eula_v3.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -615,7 +613,7 @@
       "filename": "eunjung.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/eunjung.safetensors",
+      "path": "sd15-lora/eunjung.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/eunjung.safetensors",
       "size_mb": 18.12,
       "tags": [
@@ -629,7 +627,7 @@
       "filename": "european_doll.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/european_doll.safetensors",
+      "path": "sd15-lora/european_doll.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/european_doll.safetensors",
       "size_mb": 144.34,
       "tags": [
@@ -643,7 +641,7 @@
       "filename": "fiona.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/fiona.safetensors",
+      "path": "sd15-lora/fiona.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/fiona.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -657,7 +655,7 @@
       "filename": "geronimo.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/geronimo.safetensors",
+      "path": "sd15-lora/geronimo.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/geronimo.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -671,7 +669,7 @@
       "filename": "glaceon.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/glaceon.safetensors",
+      "path": "sd15-lora/glaceon.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/glaceon.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -685,7 +683,7 @@
       "filename": "gongbi.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/gongbi.safetensors",
+      "path": "sd15-lora/gongbi.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/gongbi.safetensors",
       "size_mb": 14.64,
       "tags": [
@@ -699,7 +697,7 @@
       "filename": "guqinghan.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/guqinghan.safetensors",
+      "path": "sd15-lora/guqinghan.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/guqinghan.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -713,7 +711,7 @@
       "filename": "g_20230717.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/g_20230717.safetensors",
+      "path": "sd15-lora/g_20230717.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/g_20230717.safetensors",
       "size_mb": 108.11,
       "tags": [
@@ -727,7 +725,7 @@
       "filename": "hanfu_transparent.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/hanfu_transparent.safetensors",
+      "path": "sd15-lora/hanfu_transparent.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/hanfu_transparent.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -741,7 +739,7 @@
       "filename": "hard_zipping.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/hard_zipping.safetensors",
+      "path": "sd15-lora/hard_zipping.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/hard_zipping.safetensors",
       "size_mb": 15.67,
       "tags": [
@@ -755,7 +753,7 @@
       "filename": "hot_pants.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/hot_pants.safetensors",
+      "path": "sd15-lora/hot_pants.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/hot_pants.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -769,7 +767,7 @@
       "filename": "houshou_marine.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/houshou_marine.safetensors",
+      "path": "sd15-lora/houshou_marine.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/houshou_marine.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -783,7 +781,7 @@
       "filename": "hu1a4.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/hu1a4.safetensors",
+      "path": "sd15-lora/hu1a4.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/hu1a4.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -797,7 +795,7 @@
       "filename": "humantaur.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/humantaur.safetensors",
+      "path": "sd15-lora/humantaur.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/humantaur.safetensors",
       "size_mb": 86.41,
       "tags": [
@@ -811,7 +809,7 @@
       "filename": "illustrious.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/illustrious.safetensors",
+      "path": "sd15-lora/illustrious.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/illustrious.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -825,7 +823,7 @@
       "filename": "ishtar.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/ishtar.safetensors",
+      "path": "sd15-lora/ishtar.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/ishtar.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -839,7 +837,7 @@
       "filename": "izayoi_nonomi.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/izayoi_nonomi.safetensors",
+      "path": "sd15-lora/izayoi_nonomi.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/izayoi_nonomi.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -853,7 +851,7 @@
       "filename": "jill.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/jill.safetensors",
+      "path": "sd15-lora/jill.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/jill.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -867,7 +865,7 @@
       "filename": "jiyingying.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/jiyingying.safetensors",
+      "path": "sd15-lora/jiyingying.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/jiyingying.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -881,7 +879,7 @@
       "filename": "kalawarner.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/kalawarner.safetensors",
+      "path": "sd15-lora/kalawarner.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/kalawarner.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -895,7 +893,7 @@
       "filename": "kandisi.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/kandisi.safetensors",
+      "path": "sd15-lora/kandisi.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/kandisi.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -909,7 +907,7 @@
       "filename": "kashino_yong.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/kashino_yong.safetensors",
+      "path": "sd15-lora/kashino_yong.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/kashino_yong.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -923,7 +921,7 @@
       "filename": "kiara.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/kiara.safetensors",
+      "path": "sd15-lora/kiara.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/kiara.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -937,7 +935,7 @@
       "filename": "killer_01.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/killer_01.safetensors",
+      "path": "sd15-lora/killer_01.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/killer_01.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -951,7 +949,7 @@
       "filename": "killer_02.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/killer_02.safetensors",
+      "path": "sd15-lora/killer_02.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/killer_02.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -965,7 +963,7 @@
       "filename": "killer_03.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/killer_03.safetensors",
+      "path": "sd15-lora/killer_03.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/killer_03.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -979,7 +977,7 @@
       "filename": "killer_04.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/killer_04.safetensors",
+      "path": "sd15-lora/killer_04.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/killer_04.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -993,7 +991,7 @@
       "filename": "killer_sheer.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/killer_sheer.safetensors",
+      "path": "sd15-lora/killer_sheer.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/killer_sheer.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1007,7 +1005,7 @@
       "filename": "kimonos.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/kimonos.safetensors",
+      "path": "sd15-lora/kimonos.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/kimonos.safetensors",
       "size_mb": 37.27,
       "tags": [
@@ -1021,7 +1019,7 @@
       "filename": "kimono_seethrough.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/kimono_seethrough.safetensors",
+      "path": "sd15-lora/kimono_seethrough.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/kimono_seethrough.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -1035,7 +1033,7 @@
       "filename": "kisaragi_maya.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/kisaragi_maya.safetensors",
+      "path": "sd15-lora/kisaragi_maya.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/kisaragi_maya.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -1049,7 +1047,7 @@
       "filename": "lace_blindfold.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/lace_blindfold.safetensors",
+      "path": "sd15-lora/lace_blindfold.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/lace_blindfold.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -1063,7 +1061,7 @@
       "filename": "lace_mini.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/lace_mini.safetensors",
+      "path": "sd15-lora/lace_mini.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/lace_mini.safetensors",
       "size_mb": 9.11,
       "tags": [
@@ -1077,7 +1075,7 @@
       "filename": "lace_nightgown.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/lace_nightgown.safetensors",
+      "path": "sd15-lora/lace_nightgown.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/lace_nightgown.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -1091,7 +1089,7 @@
       "filename": "leia.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/leia.safetensors",
+      "path": "sd15-lora/leia.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/leia.safetensors",
       "size_mb": 18.13,
       "tags": [
@@ -1105,7 +1103,7 @@
       "filename": "leifang.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/leifang.safetensors",
+      "path": "sd15-lora/leifang.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/leifang.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -1119,7 +1117,7 @@
       "filename": "leifang_v2.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/leifang_v2.safetensors",
+      "path": "sd15-lora/leifang_v2.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/leifang_v2.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1133,7 +1131,7 @@
       "filename": "leila.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/leila.safetensors",
+      "path": "sd15-lora/leila.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/leila.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -1147,7 +1145,7 @@
       "filename": "leilei.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/leilei.safetensors",
+      "path": "sd15-lora/leilei.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/leilei.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1161,7 +1159,7 @@
       "filename": "leipzig.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/leipzig.safetensors",
+      "path": "sd15-lora/leipzig.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/leipzig.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1175,7 +1173,7 @@
       "filename": "lei_lei.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/lei_lei.safetensors",
+      "path": "sd15-lora/lei_lei.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/lei_lei.safetensors",
       "size_mb": 18.13,
       "tags": [
@@ -1189,7 +1187,7 @@
       "filename": "linghan.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/linghan.safetensors",
+      "path": "sd15-lora/linghan.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/linghan.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1203,7 +1201,7 @@
       "filename": "long_dress_h6.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/long_dress_h6.safetensors",
+      "path": "sd15-lora/long_dress_h6.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/long_dress_h6.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -1217,7 +1215,7 @@
       "filename": "LoRA Collection of Trauter's.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/LoRA Collection of Trauter's.safetensors",
+      "path": "sd15-lora/LoRA Collection of Trauter's.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/LoRA Collection of Trauter's.safetensors",
       "size_mb": 144.08,
       "tags": [
@@ -1231,7 +1229,7 @@
       "filename": "Lora4Cute_girl_mix4.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Lora4Cute_girl_mix4.safetensors",
+      "path": "sd15-lora/Lora4Cute_girl_mix4.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Lora4Cute_girl_mix4.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1245,7 +1243,7 @@
       "filename": "Lora4FigmaAnimeFigures.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Lora4FigmaAnimeFigures.safetensors",
+      "path": "sd15-lora/Lora4FigmaAnimeFigures.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Lora4FigmaAnimeFigures.safetensors",
       "size_mb": 147.94,
       "tags": [
@@ -1259,7 +1257,7 @@
       "filename": "Lora4guofeng3_Dream.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Lora4guofeng3_Dream.safetensors",
+      "path": "sd15-lora/Lora4guofeng3_Dream.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Lora4guofeng3_Dream.safetensors",
       "size_mb": 14.74,
       "tags": [
@@ -1273,7 +1271,7 @@
       "filename": "Lora4guofeng3_WuMo2.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Lora4guofeng3_WuMo2.safetensors",
+      "path": "sd15-lora/Lora4guofeng3_WuMo2.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Lora4guofeng3_WuMo2.safetensors",
       "size_mb": 14.74,
       "tags": [
@@ -1287,7 +1285,7 @@
       "filename": "lora_000006.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/lora_000006.safetensors",
+      "path": "sd15-lora/lora_000006.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/lora_000006.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -1301,7 +1299,7 @@
       "filename": "lora_1733.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/lora_1733.safetensors",
+      "path": "sd15-lora/lora_1733.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/lora_1733.safetensors",
       "size_mb": 37.27,
       "tags": [
@@ -1315,7 +1313,7 @@
       "filename": "lora_1760.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/lora_1760.safetensors",
+      "path": "sd15-lora/lora_1760.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/lora_1760.safetensors",
       "size_mb": 37.27,
       "tags": [
@@ -1329,7 +1327,7 @@
       "filename": "lora_20260212.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/lora_20260212.safetensors",
+      "path": "sd15-lora/lora_20260212.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/lora_20260212.safetensors",
       "size_mb": 162.25,
       "tags": [
@@ -1343,7 +1341,7 @@
       "filename": "Lora_20d_new.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Lora_20d_new.safetensors",
+      "path": "sd15-lora/Lora_20d_new.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Lora_20d_new.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -1357,7 +1355,7 @@
       "filename": "Lora_ChilloutMixss3.0.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Lora_ChilloutMixss3.0.safetensors",
+      "path": "sd15-lora/Lora_ChilloutMixss3.0.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Lora_ChilloutMixss3.0.safetensors",
       "size_mb": 72.12,
       "tags": [
@@ -1371,7 +1369,7 @@
       "filename": "Lora_dunhuang_v20.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Lora_dunhuang_v20.safetensors",
+      "path": "sd15-lora/Lora_dunhuang_v20.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Lora_dunhuang_v20.safetensors",
       "size_mb": 168.53,
       "tags": [
@@ -1385,7 +1383,7 @@
       "filename": "Lora_epiCRealismHelper.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Lora_epiCRealismHelper.safetensors",
+      "path": "sd15-lora/Lora_epiCRealismHelper.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Lora_epiCRealismHelper.safetensors",
       "size_mb": 55.83,
       "tags": [
@@ -1399,7 +1397,7 @@
       "filename": "Lora_Realistic_Anime.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Lora_Realistic_Anime.safetensors",
+      "path": "sd15-lora/Lora_Realistic_Anime.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Lora_Realistic_Anime.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1413,7 +1411,7 @@
       "filename": "Lora_Reallife.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Lora_Reallife.safetensors",
+      "path": "sd15-lora/Lora_Reallife.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Lora_Reallife.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1427,7 +1425,7 @@
       "filename": "lou.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/lou.safetensors",
+      "path": "sd15-lora/lou.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/lou.safetensors",
       "size_mb": 144.12,
       "tags": [
@@ -1441,7 +1439,7 @@
       "filename": "MechaGirlFigure_v1.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/MechaGirlFigure_v1.safetensors",
+      "path": "sd15-lora/MechaGirlFigure_v1.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/MechaGirlFigure_v1.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1455,7 +1453,7 @@
       "filename": "MechaGirl_v1.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/MechaGirl_v1.safetensors",
+      "path": "sd15-lora/MechaGirl_v1.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/MechaGirl_v1.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1469,7 +1467,7 @@
       "filename": "Mechav2_1.0.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/Mechav2_1.0.safetensors",
+      "path": "sd15-lora/Mechav2_1.0.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/Mechav2_1.0.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1483,7 +1481,7 @@
       "filename": "mecha_girl.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/mecha_girl.safetensors",
+      "path": "sd15-lora/mecha_girl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/mecha_girl.safetensors",
       "size_mb": 37.27,
       "tags": [
@@ -1497,7 +1495,7 @@
       "filename": "mecha_offset.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/mecha_offset.safetensors",
+      "path": "sd15-lora/mecha_offset.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/mecha_offset.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1511,7 +1509,7 @@
       "filename": "mei.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/mei.safetensors",
+      "path": "sd15-lora/mei.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/mei.safetensors",
       "size_mb": 144.12,
       "tags": [
@@ -1525,7 +1523,7 @@
       "filename": "mejiro_kaori.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/mejiro_kaori.safetensors",
+      "path": "sd15-lora/mejiro_kaori.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/mejiro_kaori.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -1539,7 +1537,7 @@
       "filename": "melanie.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/melanie.safetensors",
+      "path": "sd15-lora/melanie.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/melanie.safetensors",
       "size_mb": 99.47,
       "tags": [
@@ -1553,7 +1551,7 @@
       "filename": "meru_kiky.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/meru_kiky.safetensors",
+      "path": "sd15-lora/meru_kiky.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/meru_kiky.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -1567,7 +1565,7 @@
       "filename": "mix4.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/mix4.safetensors",
+      "path": "sd15-lora/mix4.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/mix4.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1581,7 +1579,7 @@
       "filename": "moona_hoshinova.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/moona_hoshinova.safetensors",
+      "path": "sd15-lora/moona_hoshinova.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/moona_hoshinova.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -1595,7 +1593,7 @@
       "filename": "multi_girls.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/multi_girls.safetensors",
+      "path": "sd15-lora/multi_girls.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/multi_girls.safetensors",
       "size_mb": 42.24,
       "tags": [
@@ -1609,7 +1607,7 @@
       "filename": "mune03.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/mune03.safetensors",
+      "path": "sd15-lora/mune03.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/mune03.safetensors",
       "size_mb": 144.12,
       "tags": [
@@ -1623,7 +1621,7 @@
       "filename": "musashi_azur.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/musashi_azur.safetensors",
+      "path": "sd15-lora/musashi_azur.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/musashi_azur.safetensors",
       "size_mb": 36.13,
       "tags": [
@@ -1637,7 +1635,7 @@
       "filename": "nagato_seethrough.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/nagato_seethrough.safetensors",
+      "path": "sd15-lora/nagato_seethrough.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/nagato_seethrough.safetensors",
       "size_mb": 14.37,
       "tags": [
@@ -1651,7 +1649,7 @@
       "filename": "nelson.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/nelson.safetensors",
+      "path": "sd15-lora/nelson.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/nelson.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -1665,7 +1663,7 @@
       "filename": "ningrongrong.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/ningrongrong.safetensors",
+      "path": "sd15-lora/ningrongrong.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/ningrongrong.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -1679,7 +1677,7 @@
       "filename": "ningyao.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/ningyao.safetensors",
+      "path": "sd15-lora/ningyao.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/ningyao.safetensors",
       "size_mb": 63.09,
       "tags": [
@@ -1693,7 +1691,7 @@
       "filename": "ninja_suit.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/ninja_suit.safetensors",
+      "path": "sd15-lora/ninja_suit.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/ninja_suit.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -1707,7 +1705,7 @@
       "filename": "nyo.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/nyo.safetensors",
+      "path": "sd15-lora/nyo.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/nyo.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -1721,7 +1719,7 @@
       "filename": "OC.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/OC.safetensors",
+      "path": "sd15-lora/OC.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/OC.safetensors",
       "size_mb": 144.12,
       "tags": [
@@ -1735,7 +1733,7 @@
       "filename": "oil_painting.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/oil_painting.safetensors",
+      "path": "sd15-lora/oil_painting.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/oil_painting.safetensors",
       "size_mb": 9.11,
       "tags": [
@@ -1749,7 +1747,7 @@
       "filename": "ooaya_mari.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/ooaya_mari.safetensors",
+      "path": "sd15-lora/ooaya_mari.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/ooaya_mari.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -1763,7 +1761,7 @@
       "filename": "pants_down.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/pants_down.safetensors",
+      "path": "sd15-lora/pants_down.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/pants_down.safetensors",
       "size_mb": 36.13,
       "tags": [
@@ -1777,7 +1775,7 @@
       "filename": "PAseerEasternDragonV3.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/PAseerEasternDragonV3.safetensors",
+      "path": "sd15-lora/PAseerEasternDragonV3.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/PAseerEasternDragonV3.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -1791,7 +1789,7 @@
       "filename": "pencil_pants.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/pencil_pants.safetensors",
+      "path": "sd15-lora/pencil_pants.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/pencil_pants.safetensors",
       "size_mb": 18.12,
       "tags": [
@@ -1805,7 +1803,7 @@
       "filename": "preggo.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/preggo.safetensors",
+      "path": "sd15-lora/preggo.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/preggo.safetensors",
       "size_mb": 36.13,
       "tags": [
@@ -1819,7 +1817,7 @@
       "filename": "public_v3.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/public_v3.safetensors",
+      "path": "sd15-lora/public_v3.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/public_v3.safetensors",
       "size_mb": 18.75,
       "tags": [
@@ -1833,7 +1831,7 @@
       "filename": "pytorch_weights.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/pytorch_weights.safetensors",
+      "path": "sd15-lora/pytorch_weights.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/pytorch_weights.safetensors",
       "size_mb": 1.66,
       "tags": [
@@ -1847,7 +1845,7 @@
       "filename": "qipao_bluegreen.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/qipao_bluegreen.safetensors",
+      "path": "sd15-lora/qipao_bluegreen.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/qipao_bluegreen.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -1861,7 +1859,7 @@
       "filename": "qp_blackflower.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/qp_blackflower.safetensors",
+      "path": "sd15-lora/qp_blackflower.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/qp_blackflower.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -1875,7 +1873,7 @@
       "filename": "qp_cyan.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/qp_cyan.safetensors",
+      "path": "sd15-lora/qp_cyan.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/qp_cyan.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -1889,7 +1887,7 @@
       "filename": "qp_shuimo.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/qp_shuimo.safetensors",
+      "path": "sd15-lora/qp_shuimo.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/qp_shuimo.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -1903,7 +1901,7 @@
       "filename": "realistic_face.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/realistic_face.safetensors",
+      "path": "sd15-lora/realistic_face.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/realistic_face.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -1917,7 +1915,7 @@
       "filename": "red_dudou.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/red_dudou.safetensors",
+      "path": "sd15-lora/red_dudou.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/red_dudou.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -1931,7 +1929,7 @@
       "filename": "red_envelope.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/red_envelope.safetensors",
+      "path": "sd15-lora/red_envelope.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/red_envelope.safetensors",
       "size_mb": 29.23,
       "tags": [
@@ -1945,7 +1943,7 @@
       "filename": "red_snake.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/red_snake.safetensors",
+      "path": "sd15-lora/red_snake.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/red_snake.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -1959,7 +1957,7 @@
       "filename": "reina_rave.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/reina_rave.safetensors",
+      "path": "sd15-lora/reina_rave.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/reina_rave.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -1973,7 +1971,7 @@
       "filename": "ruyue_zhenling.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/ruyue_zhenling.safetensors",
+      "path": "sd15-lora/ruyue_zhenling.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/ruyue_zhenling.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -1987,7 +1985,7 @@
       "filename": "sarah.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/sarah.safetensors",
+      "path": "sd15-lora/sarah.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/sarah.safetensors",
       "size_mb": 144.12,
       "tags": [
@@ -2001,7 +1999,7 @@
       "filename": "sb_lyfe.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/sb_lyfe.safetensors",
+      "path": "sd15-lora/sb_lyfe.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/sb_lyfe.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -2015,7 +2013,7 @@
       "filename": "shiraori.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/shiraori.safetensors",
+      "path": "sd15-lora/shiraori.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/shiraori.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -2029,7 +2027,7 @@
       "filename": "silky_leisure.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/silky_leisure.safetensors",
+      "path": "sd15-lora/silky_leisure.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/silky_leisure.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -2043,7 +2041,7 @@
       "filename": "silver_tight.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/silver_tight.safetensors",
+      "path": "sd15-lora/silver_tight.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/silver_tight.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -2057,7 +2055,7 @@
       "filename": "sirius.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/sirius.safetensors",
+      "path": "sd15-lora/sirius.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/sirius.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -2071,7 +2069,7 @@
       "filename": "sportswear_white.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/sportswear_white.safetensors",
+      "path": "sd15-lora/sportswear_white.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/sportswear_white.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -2085,7 +2083,7 @@
       "filename": "sp_000008.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/sp_000008.safetensors",
+      "path": "sd15-lora/sp_000008.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/sp_000008.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -2099,7 +2097,7 @@
       "filename": "stockings_black.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/stockings_black.safetensors",
+      "path": "sd15-lora/stockings_black.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/stockings_black.safetensors",
       "size_mb": 72.12,
       "tags": [
@@ -2113,7 +2111,7 @@
       "filename": "stockings_tan.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/stockings_tan.safetensors",
+      "path": "sd15-lora/stockings_tan.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/stockings_tan.safetensors",
       "size_mb": 72.13,
       "tags": [
@@ -2127,7 +2125,7 @@
       "filename": "stocking_teaser.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/stocking_teaser.safetensors",
+      "path": "sd15-lora/stocking_teaser.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/stocking_teaser.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -2141,7 +2139,7 @@
       "filename": "super_busty.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/super_busty.safetensors",
+      "path": "sd15-lora/super_busty.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/super_busty.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -2155,7 +2153,7 @@
       "filename": "taiho.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/taiho.safetensors",
+      "path": "sd15-lora/taiho.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/taiho.safetensors",
       "size_mb": 43.7,
       "tags": [
@@ -2169,7 +2167,7 @@
       "filename": "teela.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/teela.safetensors",
+      "path": "sd15-lora/teela.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/teela.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -2183,7 +2181,7 @@
       "filename": "thin_top.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/thin_top.safetensors",
+      "path": "sd15-lora/thin_top.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/thin_top.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -2197,7 +2195,7 @@
       "filename": "tifa.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/tifa.safetensors",
+      "path": "sd15-lora/tifa.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/tifa.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -2211,7 +2209,7 @@
       "filename": "transparent_sailor.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/transparent_sailor.safetensors",
+      "path": "sd15-lora/transparent_sailor.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/transparent_sailor.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -2225,7 +2223,7 @@
       "filename": "trans_dressing.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/trans_dressing.safetensors",
+      "path": "sd15-lora/trans_dressing.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/trans_dressing.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -2239,7 +2237,7 @@
       "filename": "tulle_lace.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/tulle_lace.safetensors",
+      "path": "sd15-lora/tulle_lace.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/tulle_lace.safetensors",
       "size_mb": 72.11,
       "tags": [
@@ -2253,7 +2251,7 @@
       "filename": "tutuqpqp.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/tutuqpqp.safetensors",
+      "path": "sd15-lora/tutuqpqp.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/tutuqpqp.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -2267,7 +2265,7 @@
       "filename": "volleyball_uniform.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/volleyball_uniform.safetensors",
+      "path": "sd15-lora/volleyball_uniform.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/volleyball_uniform.safetensors",
       "size_mb": 42.24,
       "tags": [
@@ -2281,7 +2279,7 @@
       "filename": "waist_chain.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/waist_chain.safetensors",
+      "path": "sd15-lora/waist_chain.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/waist_chain.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -2295,7 +2293,7 @@
       "filename": "wanghong_shuiyi.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/wanghong_shuiyi.safetensors",
+      "path": "sd15-lora/wanghong_shuiyi.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/wanghong_shuiyi.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -2309,7 +2307,7 @@
       "filename": "white_lace.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/white_lace.safetensors",
+      "path": "sd15-lora/white_lace.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/white_lace.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -2323,7 +2321,7 @@
       "filename": "winry.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/winry.safetensors",
+      "path": "sd15-lora/winry.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/winry.safetensors",
       "size_mb": 36.11,
       "tags": [
@@ -2337,7 +2335,7 @@
       "filename": "yoga_pants.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/yoga_pants.safetensors",
+      "path": "sd15-lora/yoga_pants.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/yoga_pants.safetensors",
       "size_mb": 18.11,
       "tags": [
@@ -2351,7 +2349,7 @@
       "filename": "yor.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/yor.safetensors",
+      "path": "sd15-lora/yor.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/yor.safetensors",
       "size_mb": 144.11,
       "tags": [
@@ -2365,7 +2363,7 @@
       "filename": "yui_zit.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/yui_zit.safetensors",
+      "path": "sd15-lora/yui_zit.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/yui_zit.safetensors",
       "size_mb": 162.25,
       "tags": [
@@ -2379,7 +2377,7 @@
       "filename": "zara_azur.safetensors",
       "lora_type": "sd15",
       "lora_type_name": "SD1.5",
-      "path": "models/sd15-lora/zara_azur.safetensors",
+      "path": "sd15-lora/zara_azur.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sd15-lora/zara_azur.safetensors",
       "size_mb": 36.12,
       "tags": [
@@ -2393,7 +2391,7 @@
       "filename": "aesthetic_anime.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/aesthetic_anime.safetensors",
+      "path": "sdxl-lora/aesthetic_anime.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/aesthetic_anime.safetensors",
       "size_mb": 324.98,
       "tags": [
@@ -2407,7 +2405,7 @@
       "filename": "aiko.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/aiko.safetensors",
+      "path": "sdxl-lora/aiko.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/aiko.safetensors",
       "size_mb": 217.88,
       "tags": [
@@ -2421,7 +2419,7 @@
       "filename": "aisha_egypt.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/aisha_egypt.safetensors",
+      "path": "sdxl-lora/aisha_egypt.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/aisha_egypt.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -2435,7 +2433,7 @@
       "filename": "akiyama_rinko_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/akiyama_rinko_sdxl.safetensors",
+      "path": "sdxl-lora/akiyama_rinko_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/akiyama_rinko_sdxl.safetensors",
       "size_mb": 435.34,
       "tags": [
@@ -2449,7 +2447,7 @@
       "filename": "aki_autumn.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/aki_autumn.safetensors",
+      "path": "sdxl-lora/aki_autumn.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/aki_autumn.safetensors",
       "size_mb": 244.19,
       "tags": [
@@ -2463,7 +2461,7 @@
       "filename": "albedo.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/albedo.safetensors",
+      "path": "sdxl-lora/albedo.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/albedo.safetensors",
       "size_mb": 109.13,
       "tags": [
@@ -2477,7 +2475,7 @@
       "filename": "amateur_photo.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/amateur_photo.safetensors",
+      "path": "sdxl-lora/amateur_photo.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/amateur_photo.safetensors",
       "size_mb": 649.68,
       "tags": [
@@ -2491,7 +2489,7 @@
       "filename": "anche_stocking_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/anche_stocking_sdxl.safetensors",
+      "path": "sdxl-lora/anche_stocking_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/anche_stocking_sdxl.safetensors",
       "size_mb": 222.15,
       "tags": [
@@ -2505,7 +2503,7 @@
       "filename": "animal_secretary.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/animal_secretary.safetensors",
+      "path": "sdxl-lora/animal_secretary.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/animal_secretary.safetensors",
       "size_mb": 217.88,
       "tags": [
@@ -2519,7 +2517,7 @@
       "filename": "anmi_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/anmi_sdxl.safetensors",
+      "path": "sdxl-lora/anmi_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/anmi_sdxl.safetensors",
       "size_mb": 88.72,
       "tags": [
@@ -2533,7 +2531,7 @@
       "filename": "anya_rocks.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/anya_rocks.safetensors",
+      "path": "sdxl-lora/anya_rocks.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/anya_rocks.safetensors",
       "size_mb": 217.88,
       "tags": [
@@ -2547,7 +2545,7 @@
       "filename": "aqua.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/aqua.safetensors",
+      "path": "sdxl-lora/aqua.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/aqua.safetensors",
       "size_mb": 162.64,
       "tags": [
@@ -2561,7 +2559,7 @@
       "filename": "aqua_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/aqua_sdxl.safetensors",
+      "path": "sdxl-lora/aqua_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/aqua_sdxl.safetensors",
       "size_mb": 162.64,
       "tags": [
@@ -2575,7 +2573,7 @@
       "filename": "artgerm_pony.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/artgerm_pony.safetensors",
+      "path": "sdxl-lora/artgerm_pony.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/artgerm_pony.safetensors",
       "size_mb": 217.89,
       "tags": [
@@ -2589,7 +2587,7 @@
       "filename": "asian_girl_gimme.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/asian_girl_gimme.safetensors",
+      "path": "sdxl-lora/asian_girl_gimme.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/asian_girl_gimme.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -2603,7 +2601,7 @@
       "filename": "ave.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/ave.safetensors",
+      "path": "sdxl-lora/ave.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/ave.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -2617,7 +2615,7 @@
       "filename": "b1_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/b1_sdxl.safetensors",
+      "path": "sdxl-lora/b1_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/b1_sdxl.safetensors",
       "size_mb": 54.76,
       "tags": [
@@ -2631,7 +2629,7 @@
       "filename": "beautiful_indian_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/beautiful_indian_sdxl.safetensors",
+      "path": "sdxl-lora/beautiful_indian_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/beautiful_indian_sdxl.safetensors",
       "size_mb": 435.35,
       "tags": [
@@ -2645,7 +2643,7 @@
       "filename": "boa_hancock.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/boa_hancock.safetensors",
+      "path": "sdxl-lora/boa_hancock.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/boa_hancock.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -2659,7 +2657,7 @@
       "filename": "boobs.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/boobs.safetensors",
+      "path": "sdxl-lora/boobs.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/boobs.safetensors",
       "size_mb": 109.14,
       "tags": [
@@ -2673,7 +2671,7 @@
       "filename": "BT_Hand_in_Pants_XL.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/BT_Hand_in_Pants_XL.safetensors",
+      "path": "sdxl-lora/BT_Hand_in_Pants_XL.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/BT_Hand_in_Pants_XL.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -2687,7 +2685,7 @@
       "filename": "bt_hand_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/bt_hand_sdxl.safetensors",
+      "path": "sdxl-lora/bt_hand_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/bt_hand_sdxl.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -2701,7 +2699,7 @@
       "filename": "bt_lace_top_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/bt_lace_top_sdxl.safetensors",
+      "path": "sdxl-lora/bt_lace_top_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/bt_lace_top_sdxl.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -2715,7 +2713,7 @@
       "filename": "busty_sophie_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/busty_sophie_sdxl.safetensors",
+      "path": "sdxl-lora/busty_sophie_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/busty_sophie_sdxl.safetensors",
       "size_mb": 40.65,
       "tags": [
@@ -2729,7 +2727,7 @@
       "filename": "caier_old_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/caier_old_sdxl.safetensors",
+      "path": "sdxl-lora/caier_old_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/caier_old_sdxl.safetensors",
       "size_mb": 292.3,
       "tags": [
@@ -2743,7 +2741,7 @@
       "filename": "charvi.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/charvi.safetensors",
+      "path": "sdxl-lora/charvi.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/charvi.safetensors",
       "size_mb": 217.88,
       "tags": [
@@ -2757,7 +2755,7 @@
       "filename": "clothed.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/clothed.safetensors",
+      "path": "sdxl-lora/clothed.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/clothed.safetensors",
       "size_mb": 74.32,
       "tags": [
@@ -2771,7 +2769,7 @@
       "filename": "cure_berry.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/cure_berry.safetensors",
+      "path": "sdxl-lora/cure_berry.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/cure_berry.safetensors",
       "size_mb": 244.19,
       "tags": [
@@ -2785,7 +2783,7 @@
       "filename": "cyber_android_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/cyber_android_sdxl.safetensors",
+      "path": "sdxl-lora/cyber_android_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/cyber_android_sdxl.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -2799,7 +2797,7 @@
       "filename": "cyborg_beauty.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/cyborg_beauty.safetensors",
+      "path": "sdxl-lora/cyborg_beauty.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/cyborg_beauty.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -2813,7 +2811,7 @@
       "filename": "dangui_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/dangui_sdxl.safetensors",
+      "path": "sdxl-lora/dangui_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/dangui_sdxl.safetensors",
       "size_mb": 81.47,
       "tags": [
@@ -2827,7 +2825,7 @@
       "filename": "donghua_cloths.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/donghua_cloths.safetensors",
+      "path": "sdxl-lora/donghua_cloths.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/donghua_cloths.safetensors",
       "size_mb": 435.34,
       "tags": [
@@ -2841,7 +2839,7 @@
       "filename": "E382BBE383BCE383A9E383BCE38397E383.zMmt.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/E382BBE383BCE383A9E383BCE38397E383.zMmt.safetensors",
+      "path": "sdxl-lora/E382BBE383BCE383A9E383BCE38397E383.zMmt.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/E382BBE383BCE383A9E383BCE38397E383.zMmt.safetensors",
       "size_mb": 244.19,
       "tags": [
@@ -2855,7 +2853,7 @@
       "filename": "elizabeth.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/elizabeth.safetensors",
+      "path": "sdxl-lora/elizabeth.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/elizabeth.safetensors",
       "size_mb": 244.19,
       "tags": [
@@ -2869,7 +2867,7 @@
       "filename": "face_upside.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/face_upside.safetensors",
+      "path": "sdxl-lora/face_upside.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/face_upside.safetensors",
       "size_mb": 435.34,
       "tags": [
@@ -2883,7 +2881,7 @@
       "filename": "foxty.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/foxty.safetensors",
+      "path": "sdxl-lora/foxty.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/foxty.safetensors",
       "size_mb": 217.88,
       "tags": [
@@ -2897,7 +2895,7 @@
       "filename": "her7.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/her7.safetensors",
+      "path": "sdxl-lora/her7.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/her7.safetensors",
       "size_mb": 435.39,
       "tags": [
@@ -2911,7 +2909,7 @@
       "filename": "hestia.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/hestia.safetensors",
+      "path": "sdxl-lora/hestia.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/hestia.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -2925,7 +2923,7 @@
       "filename": "insta_influencer.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/insta_influencer.safetensors",
+      "path": "sdxl-lora/insta_influencer.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/insta_influencer.safetensors",
       "size_mb": 435.34,
       "tags": [
@@ -2939,7 +2937,7 @@
       "filename": "jadecarving_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/jadecarving_sdxl.safetensors",
+      "path": "sdxl-lora/jadecarving_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/jadecarving_sdxl.safetensors",
       "size_mb": 54.76,
       "tags": [
@@ -2953,7 +2951,7 @@
       "filename": "jennie.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/jennie.safetensors",
+      "path": "sdxl-lora/jennie.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/jennie.safetensors",
       "size_mb": 217.88,
       "tags": [
@@ -2967,7 +2965,7 @@
       "filename": "julia_flip.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/julia_flip.safetensors",
+      "path": "sdxl-lora/julia_flip.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/julia_flip.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -2981,7 +2979,7 @@
       "filename": "kido_saori.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/kido_saori.safetensors",
+      "path": "sdxl-lora/kido_saori.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/kido_saori.safetensors",
       "size_mb": 109.13,
       "tags": [
@@ -2995,7 +2993,7 @@
       "filename": "kissshot_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/kissshot_sdxl.safetensors",
+      "path": "sdxl-lora/kissshot_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/kissshot_sdxl.safetensors",
       "size_mb": 54.77,
       "tags": [
@@ -3009,7 +3007,7 @@
       "filename": "kitana.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/kitana.safetensors",
+      "path": "sdxl-lora/kitana.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/kitana.safetensors",
       "size_mb": 109.14,
       "tags": [
@@ -3023,7 +3021,7 @@
       "filename": "langjingshan.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/langjingshan.safetensors",
+      "path": "sdxl-lora/langjingshan.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/langjingshan.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -3037,7 +3035,7 @@
       "filename": "lora_000004.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/lora_000004.safetensors",
+      "path": "sdxl-lora/lora_000004.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/lora_000004.safetensors",
       "size_mb": 435.34,
       "tags": [
@@ -3051,7 +3049,7 @@
       "filename": "lora_000004_v2.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/lora_000004_v2.safetensors",
+      "path": "sdxl-lora/lora_000004_v2.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/lora_000004_v2.safetensors",
       "size_mb": 435.34,
       "tags": [
@@ -3065,7 +3063,7 @@
       "filename": "lora_000009.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/lora_000009.safetensors",
+      "path": "sdxl-lora/lora_000009.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/lora_000009.safetensors",
       "size_mb": 435.34,
       "tags": [
@@ -3079,7 +3077,7 @@
       "filename": "mitsuko_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/mitsuko_sdxl.safetensors",
+      "path": "sdxl-lora/mitsuko_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/mitsuko_sdxl.safetensors",
       "size_mb": 40.88,
       "tags": [
@@ -3093,7 +3091,7 @@
       "filename": "mitsuri.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/mitsuri.safetensors",
+      "path": "sdxl-lora/mitsuri.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/mitsuri.safetensors",
       "size_mb": 435.34,
       "tags": [
@@ -3107,7 +3105,7 @@
       "filename": "mobwife_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/mobwife_sdxl.safetensors",
+      "path": "sdxl-lora/mobwife_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/mobwife_sdxl.safetensors",
       "size_mb": 162.73,
       "tags": [
@@ -3121,7 +3119,7 @@
       "filename": "modern_saree.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/modern_saree.safetensors",
+      "path": "sdxl-lora/modern_saree.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/modern_saree.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -3135,7 +3133,7 @@
       "filename": "monogatari.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/monogatari.safetensors",
+      "path": "sdxl-lora/monogatari.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/monogatari.safetensors",
       "size_mb": 54.77,
       "tags": [
@@ -3149,7 +3147,7 @@
       "filename": "multiset_clothing.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/multiset_clothing.safetensors",
+      "path": "sdxl-lora/multiset_clothing.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/multiset_clothing.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -3163,7 +3161,7 @@
       "filename": "nargess_persian_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/nargess_persian_sdxl.safetensors",
+      "path": "sdxl-lora/nargess_persian_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/nargess_persian_sdxl.safetensors",
       "size_mb": 435.34,
       "tags": [
@@ -3177,7 +3175,7 @@
       "filename": "natasha.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/natasha.safetensors",
+      "path": "sdxl-lora/natasha.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/natasha.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -3191,7 +3189,7 @@
       "filename": "natasha_notreal.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/natasha_notreal.safetensors",
+      "path": "sdxl-lora/natasha_notreal.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/natasha_notreal.safetensors",
       "size_mb": 217.88,
       "tags": [
@@ -3205,7 +3203,7 @@
       "filename": "ordinary_woman_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/ordinary_woman_sdxl.safetensors",
+      "path": "sdxl-lora/ordinary_woman_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/ordinary_woman_sdxl.safetensors",
       "size_mb": 217.89,
       "tags": [
@@ -3219,7 +3217,7 @@
       "filename": "pantyhose_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/pantyhose_sdxl.safetensors",
+      "path": "sdxl-lora/pantyhose_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/pantyhose_sdxl.safetensors",
       "size_mb": 324.98,
       "tags": [
@@ -3233,7 +3231,7 @@
       "filename": "pd802x4_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/pd802x4_sdxl.safetensors",
+      "path": "sdxl-lora/pd802x4_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/pd802x4_sdxl.safetensors",
       "size_mb": 244.19,
       "tags": [
@@ -3247,7 +3245,7 @@
       "filename": "prg_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/prg_sdxl.safetensors",
+      "path": "sdxl-lora/prg_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/prg_sdxl.safetensors",
       "size_mb": 435.35,
       "tags": [
@@ -3261,7 +3259,7 @@
       "filename": "qige_armor.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/qige_armor.safetensors",
+      "path": "sdxl-lora/qige_armor.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/qige_armor.safetensors",
       "size_mb": 652.81,
       "tags": [
@@ -3275,7 +3273,7 @@
       "filename": "qipao_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/qipao_sdxl.safetensors",
+      "path": "sdxl-lora/qipao_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/qipao_sdxl.safetensors",
       "size_mb": 54.76,
       "tags": [
@@ -3289,7 +3287,7 @@
       "filename": "sailor_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/sailor_sdxl.safetensors",
+      "path": "sdxl-lora/sailor_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/sailor_sdxl.safetensors",
       "size_mb": 244.19,
       "tags": [
@@ -3303,7 +3301,7 @@
       "filename": "satin_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/satin_sdxl.safetensors",
+      "path": "sdxl-lora/satin_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/satin_sdxl.safetensors",
       "size_mb": 162.64,
       "tags": [
@@ -3317,7 +3315,7 @@
       "filename": "satin_seduct.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/satin_seduct.safetensors",
+      "path": "sdxl-lora/satin_seduct.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/satin_seduct.safetensors",
       "size_mb": 162.64,
       "tags": [
@@ -3331,7 +3329,7 @@
       "filename": "school_uniform_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/school_uniform_sdxl.safetensors",
+      "path": "sdxl-lora/school_uniform_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/school_uniform_sdxl.safetensors",
       "size_mb": 109.13,
       "tags": [
@@ -3345,7 +3343,7 @@
       "filename": "seifuku.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/seifuku.safetensors",
+      "path": "sdxl-lora/seifuku.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/seifuku.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -3359,7 +3357,7 @@
       "filename": "seoyeon.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/seoyeon.safetensors",
+      "path": "sdxl-lora/seoyeon.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/seoyeon.safetensors",
       "size_mb": 217.88,
       "tags": [
@@ -3373,7 +3371,7 @@
       "filename": "sequoya_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/sequoya_sdxl.safetensors",
+      "path": "sdxl-lora/sequoya_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/sequoya_sdxl.safetensors",
       "size_mb": 217.88,
       "tags": [
@@ -3387,7 +3385,7 @@
       "filename": "siemradzki.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/siemradzki.safetensors",
+      "path": "sdxl-lora/siemradzki.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/siemradzki.safetensors",
       "size_mb": 217.89,
       "tags": [
@@ -3401,7 +3399,7 @@
       "filename": "sl_mrcc.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/sl_mrcc.safetensors",
+      "path": "sdxl-lora/sl_mrcc.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/sl_mrcc.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -3415,7 +3413,7 @@
       "filename": "sp_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/sp_sdxl.safetensors",
+      "path": "sdxl-lora/sp_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/sp_sdxl.safetensors",
       "size_mb": 109.13,
       "tags": [
@@ -3429,7 +3427,7 @@
       "filename": "tan_stockings_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/tan_stockings_sdxl.safetensors",
+      "path": "sdxl-lora/tan_stockings_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/tan_stockings_sdxl.safetensors",
       "size_mb": 324.98,
       "tags": [
@@ -3443,7 +3441,7 @@
       "filename": "tawawa.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/tawawa.safetensors",
+      "path": "sdxl-lora/tawawa.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/tawawa.safetensors",
       "size_mb": 109.14,
       "tags": [
@@ -3457,7 +3455,7 @@
       "filename": "ta_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/ta_sdxl.safetensors",
+      "path": "sdxl-lora/ta_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/ta_sdxl.safetensors",
       "size_mb": 386.27,
       "tags": [
@@ -3471,7 +3469,7 @@
       "filename": "ta_trained.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/ta_trained.safetensors",
+      "path": "sdxl-lora/ta_trained.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/ta_trained.safetensors",
       "size_mb": 386.27,
       "tags": [
@@ -3485,7 +3483,7 @@
       "filename": "ta_trained_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/ta_trained_sdxl.safetensors",
+      "path": "sdxl-lora/ta_trained_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/ta_trained_sdxl.safetensors",
       "size_mb": 386.27,
       "tags": [
@@ -3499,7 +3497,7 @@
       "filename": "temari.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/temari.safetensors",
+      "path": "sdxl-lora/temari.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/temari.safetensors",
       "size_mb": 217.87,
       "tags": [
@@ -3513,7 +3511,7 @@
       "filename": "thin_busty_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/thin_busty_sdxl.safetensors",
+      "path": "sdxl-lora/thin_busty_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/thin_busty_sdxl.safetensors",
       "size_mb": 188.85,
       "tags": [
@@ -3527,7 +3525,7 @@
       "filename": "transparent_dress.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/transparent_dress.safetensors",
+      "path": "sdxl-lora/transparent_dress.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/transparent_dress.safetensors",
       "size_mb": 327.88,
       "tags": [
@@ -3541,7 +3539,7 @@
       "filename": "virtual_woman.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/virtual_woman.safetensors",
+      "path": "sdxl-lora/virtual_woman.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/virtual_woman.safetensors",
       "size_mb": 217.88,
       "tags": [
@@ -3555,7 +3553,7 @@
       "filename": "xiao_wu_sdxl.safetensors",
       "lora_type": "sdxl",
       "lora_type_name": "SDXL",
-      "path": "models/sdxl-lora/xiao_wu_sdxl.safetensors",
+      "path": "sdxl-lora/xiao_wu_sdxl.safetensors",
       "absolute_path": "E:/SD_OpenVINO/models/sdxl-lora/xiao_wu_sdxl.safetensors",
       "size_mb": 244.19,
       "tags": [
@@ -3563,62 +3561,6 @@
       ],
       "score": 50,
       "modified": "2026-05-23T08:53:30.901408"
-    },
-    {
-      "name": "clearvaeSD15_v23",
-      "filename": "clearvaeSD15_v23.safetensors",
-      "lora_type": "sd15",
-      "lora_type_name": "SD1.5",
-      "path": "models/vae/clearvaeSD15_v23.safetensors",
-      "absolute_path": "E:/SD_OpenVINO/models/vae/clearvaeSD15_v23.safetensors",
-      "size_mb": 319.14,
-      "tags": [
-        "auto_scanned"
-      ],
-      "score": 50,
-      "modified": "2026-07-07T22:52:49.913774"
-    },
-    {
-      "name": "vaeFtEma560000Ema_original",
-      "filename": "vaeFtEma560000Ema_original.safetensors",
-      "lora_type": "sdxl",
-      "lora_type_name": "SDXL",
-      "path": "models/vae/vaeFtEma560000Ema_original.safetensors",
-      "absolute_path": "E:/SD_OpenVINO/models/vae/vaeFtEma560000Ema_original.safetensors",
-      "size_mb": 319.14,
-      "tags": [
-        "auto_scanned"
-      ],
-      "score": 50,
-      "modified": "2026-07-07T22:03:24.598955"
-    },
-    {
-      "name": "voidnoiseVAE_baseonR0829",
-      "filename": "voidnoiseVAE_baseonR0829.safetensors",
-      "lora_type": "sdxl",
-      "lora_type_name": "SDXL",
-      "path": "models/vae/voidnoiseVAE_baseonR0829.safetensors",
-      "absolute_path": "E:/SD_OpenVINO/models/vae/voidnoiseVAE_baseonR0829.safetensors",
-      "size_mb": 159.58,
-      "tags": [
-        "auto_scanned"
-      ],
-      "score": 50,
-      "modified": "2026-07-07T22:05:42.242072"
-    },
-    {
-      "name": "model",
-      "filename": "model.safetensors",
-      "lora_type": "sdxl",
-      "lora_type_name": "SDXL",
-      "path": "models/controlnet/models--CIDAS--clipseg-rd64-refined/snapshots/999e0328d9e10b484360c477313983f9afdd7050/model.safetensors",
-      "absolute_path": "E:/SD_OpenVINO/models/controlnet/models--CIDAS--clipseg-rd64-refined/snapshots/999e0328d9e10b484360c477313983f9afdd7050/model.safetensors",
-      "size_mb": 575.11,
-      "tags": [
-        "auto_scanned"
-      ],
-      "score": 50,
-      "modified": "2026-08-28T01:34:54.384243"
     }
   ],
   "default": "airi_shadowstrike",

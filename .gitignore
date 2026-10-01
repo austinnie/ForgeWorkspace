@@ -65,6 +65,7 @@ project_code_dump.txt"models/"
 "data/" 
 "models/" 
 "apps/sd_gui/models/" 
+apps/*/models/ 
 
 # --- 构建产物与垃圾目录 ---
 build/
@@ -74,3 +75,7 @@ flutter_assets/
 .gradle/
 *.apk
 *.ipa
+$null 
+dump_project.py 
+project_dump.txt 
+

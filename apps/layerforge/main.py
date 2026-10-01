@@ -31,10 +31,20 @@ print("🚀 正在启动: LayerForge (Gradio 版)")
 print("=" * 60)
 
 try:
-    from gui.gradio_app import main
-    main()
+    import gui.gradio_app as gradio_app
+    
+    # 尝试多种方式启动，确保总能找到入口
+    if hasattr(gradio_app, 'main'):
+        print("🚀 调用 gradio_app.main()...")
+        gradio_app.main()
+    elif hasattr(gradio_app, 'demo') and hasattr(getattr(gradio_app, 'demo'), 'launch'):
+        print(f"🚀 启动 Gradio 界面: demo.launch()...")
+        getattr(gradio_app, 'demo').launch(inbrowser=True, share=False)
+    else:
+        print("⚠️ 未找到标准的启动入口，模块加载完毕。")
 except Exception as e:
     print(f"❌ 启动失败: {e}")
     import traceback
     traceback.print_exc()
     input("按回车键退出...")
+
