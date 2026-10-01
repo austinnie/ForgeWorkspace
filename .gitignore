@@ -79,3 +79,18 @@ $null
 dump_project.py 
 project_dump.txt 
 
+.env
+.env.*
+   
+# --- 绝对不提交的大文件与目录 ---
+*.safetensors
+*.ckpt
+*.pt
+*.bin
+*.pth
+*.onnx
+*.sf2
+*.zip
+*.mp4
+*.mp3
+apps/promptforge/skills/music_generator/soundfonts/*.sf2

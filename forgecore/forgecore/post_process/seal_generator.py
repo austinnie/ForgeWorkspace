@@ -24,6 +24,7 @@ from typing import Optional, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont
 
+
 # ============================================================
 # 路径 & 字体
 # ============================================================
@@ -106,7 +107,7 @@ class SealGenerator:
         zhuan_font = PROJECT_ROOT / "assets" / "fonts" / "Mini_zhuan.ttf"
         if zhuan_font.exists():
             try:
-                f = ImageFont.truetype(None), size)
+                f = ImageFont.truetype(str(zhuan_font), size)
                 if self._has_all_glyphs(f, "东方艺术"):
                     return f
                 else:
@@ -117,7 +118,7 @@ class SealGenerator:
         # 2. __init__ 指定的字体
         if self.font_path and Path(self.font_path).exists():
             try:
-                return ImageFont.truetype(None), size)
+                return ImageFont.truetype(str(self.font_path), size)
             except Exception:
                 pass
 
@@ -125,7 +126,7 @@ class SealGenerator:
         for p in FONT_CANDIDATES:
             if p.exists():
                 try:
-                    return ImageFont.truetype(None), size)
+                    return ImageFont.truetype(str(p), size)
                 except Exception:
                     continue
 

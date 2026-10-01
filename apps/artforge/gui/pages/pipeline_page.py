@@ -64,11 +64,14 @@ def run_pipeline(category, preset, engine_name, composition,
                  seal_scheme, seed):
     logs = []
     try:
+        # 🔥 延迟导入：点击生成时才加载，实现 WebUI 秒级响应
         from core.prompt_builder import PromptBuilder
         from api_engines import create_engine
-        from compose_artwork import (
-            InscriptionRenderer, theme_from_preset, ARTIST_NAME,
-        )
+        from compose_artwork import InscriptionRenderer, theme_from_preset, ARTIST_NAME
+        from forgecore.post_process.aging_processor import AgingProcessor
+        from forgecore.post_process.inscription_generator import InscriptionGenerator
+        from forgecore.post_process.seal_generator import SealGenerator
+        from forgecore.post_process.watermark import WatermarkProcessor
 
         seed_int = None
         if seed not in (None, "", -1):
@@ -115,7 +118,7 @@ def run_pipeline(category, preset, engine_name, composition,
         # ---------- 3. 做旧 ----------
         if use_aging:
             try:
-                from services.aging_processor import AgingProcessor
+                from forgecore.post_process.aging_processor import AgingProcessor
                 aged = AgingProcessor(seed=seed_int).apply(
                     image.convert("RGB"),
                     texture="xuan_paper", strength=0.55,
@@ -129,7 +132,7 @@ def run_pipeline(category, preset, engine_name, composition,
         inscription_text = ""
         if use_inscription:
             try:
-                from services.inscription_generator import InscriptionGenerator
+                from forgecore.post_process.inscription_generator import InscriptionGenerator
                 ig = InscriptionGenerator(seed=seed_int)
                 inscription_text, meta = ig.generate(
                     theme=theme, format="auto", return_meta=True,
@@ -152,7 +155,7 @@ def run_pipeline(category, preset, engine_name, composition,
         # ---------- 5. 印章（方案化）----------
         if use_seal:
             try:
-                from services.seal_generator import SealGenerator
+                from forgecore.post_process.seal_generator import SealGenerator
                 sg = SealGenerator()
                 image = sg.apply_scheme(
                     image, ARTIST_NAME,
@@ -167,7 +170,7 @@ def run_pipeline(category, preset, engine_name, composition,
         # ---------- 6. 防伪水印（纯中文）----------
         if use_watermark:
             try:
-                from services.watermark import WatermarkProcessor
+                from forgecore.post_process.watermark import WatermarkProcessor
                 wp = WatermarkProcessor(seed=seed_int)
                 watermark_text = ARTIST_NAME
                 image = wp.add_subtle_watermark(

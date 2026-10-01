@@ -2,6 +2,7 @@
 """防伪水印处理器：斜向平铺 + 描边 + 半透明底块（任何底图可见）"""
 from __future__ import annotations
 import random
+import sys
 from pathlib import Path
 from typing import Optional
 from PIL import Image, ImageDraw, ImageFont

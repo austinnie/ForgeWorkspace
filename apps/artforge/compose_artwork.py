@@ -3,7 +3,6 @@
 ArtForge 合成工具库
 
 本文件提供两类内容：
-
 【工具类 / 函数】（被 main.py / GUI / 其他脚本复用）
   - ARTIST_NAME          ：作者名（印章、水印、元信息用）
   - COMPOSITION_SIZE     ：画幅 → 尺寸映射
@@ -11,19 +10,6 @@ ArtForge 合成工具库
   - load_config()        ：读 .env → API 配置 dict
   - pick_size()          ：根据 composition 层推画幅尺寸
   - theme_from_preset()  ：根据预设推题词主题
-
-【使用方式】
-  from compose_artwork import (
-      ARTIST_NAME,
-      InscriptionRenderer,
-      load_config,
-      pick_size,
-      theme_from_preset,
-  )
-
-【CLI 入口】
-  请使用 main.py（唯一 CLI 入口）：
-      python main.py --preset tengu --category yokai
 """
 
 from __future__ import annotations
@@ -36,27 +22,8 @@ from typing import Dict, Optional, Tuple
 from PIL import Image, ImageDraw, ImageFont
 
 # ============================================================
-# 个人配置（请修改为你的名字）
-# ============================================================
-ARTIST_NAME = "东方艺术"
-
-# 🎯 精准指定小篆字体路径 (相对路径，兼容 Monorepo 结构)
-MINI_ZHUAN_FONT = Path(__file__).resolve().parent.parent / "shared_assets" / "fonts" / "Mini_zhuan.ttf"
-
-
-# 🎯 精准指定小篆字体路径 (相对路径，兼容 Monorepo 结构)
-MINI_ZHUAN_FONT = Path(__file__).resolve().parent.parent / "shared_assets" / "fonts" / "Mini_zhuan.ttf"
-
-
-# 🎯 精准指定小篆字体路径 (相对路径，兼容 Monorepo 结构)
-MINI_ZHUAN_FONT = Path(__file__).resolve().parent.parent / "shared_assets" / "fonts" / "Mini_zhuan.ttf"
-  # ✅ 改成你的名字
-
-
-# ============================================================
 # 路径修正 + .env
 # ============================================================
-
 PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -71,11 +38,17 @@ try:
 except ImportError:
     pass
 
+# ============================================================
+# 个人配置
+# ============================================================
+ARTIST_NAME = "东方艺术"
+
+# 🎯 精准指定小篆字体路径 (优先使用 shared_assets 中的字体)
+MINI_ZHUAN_FONT = PROJECT_ROOT.parent / "shared_assets" / "fonts" / "Mini_zhuan.ttf"
 
 # ============================================================
 # 画幅 → 尺寸
 # ============================================================
-
 COMPOSITION_SIZE = {
     "vertical":   (768, 1365),
     "horizontal": (1365, 768),
@@ -84,11 +57,9 @@ COMPOSITION_SIZE = {
     "album":      (768, 1024),
 }
 
-
 # ============================================================
 # 题词渲染器（竖排，从右往左）
 # ============================================================
-
 class InscriptionRenderer:
     """把题词文本竖排渲染到画面上"""
 
@@ -135,31 +106,12 @@ class InscriptionRenderer:
         bg_alpha: int = 180,
         bg_color: Tuple[int, int, int] = (250, 248, 240),
     ) -> Image.Image:
-        """
-        把题词竖排渲染到画面上（从右往左）。
-
-        Args:
-            canvas:            画布（RGBA）
-            text:              题词文本（可含换行）
-            font_size:         字号
-            color:             墨色
-            position:          top_right / top_left / bottom_right / bottom_left
-            margin:            边距
-            line_gap_ratio:    列间距（相对字号）
-            max_chars_per_col: 每列最多几字，超出换列
-            bg_alpha:          底衬透明度 0-255（0 = 不加底衬）
-            bg_color:          底衬颜色（默认宣纸米白）
-
-        Returns:
-            合成后的 RGBA 图像
-        """
         if not text.strip():
             return canvas
 
         if canvas.mode != "RGBA":
             canvas = canvas.convert("RGBA")
 
-        # 1. 拆列
         raw_lines = [l for l in text.split("\n") if l.strip()]
         columns = []
         for line in raw_lines:
@@ -172,7 +124,6 @@ class InscriptionRenderer:
         if not columns:
             return canvas
 
-        # 2. 量尺寸
         font = self._load_font(font_size)
         draw = ImageDraw.Draw(canvas)
 
@@ -191,7 +142,6 @@ class InscriptionRenderer:
 
         cw, ch = canvas.size
 
-        # 3. 起始位置
         if "right" in position:
             x_start = cw - margin - block_w
         else:
@@ -202,7 +152,6 @@ class InscriptionRenderer:
         else:
             y_start = ch - margin - block_h
 
-        # 4. 逐列逐字绘制（从右往左）
         for ci, col in enumerate(columns):
             x = x_start + (n_cols - 1 - ci) * col_gap
             y = y_start
@@ -225,7 +174,6 @@ class InscriptionRenderer:
 # ============================================================
 
 def load_config() -> Dict[str, str]:
-    """读 .env → config dict（传给 create_engine）"""
     return {
         "POLLINATIONS_API_KEY": os.getenv("POLLINATIONS_API_KEY"),
         "POLLINATIONS_MODEL": os.getenv("POLLINATIONS_MODEL"),
@@ -238,7 +186,6 @@ def load_config() -> Dict[str, str]:
 
 
 def pick_size(detail: Dict[str, str]) -> Tuple[int, int]:
-    """根据 composition 层猜画幅尺寸"""
     comp = (detail.get("composition") or "").lower()
     if any(w in comp for w in ["vertical", "scroll", "hanging", "立轴", "挂轴"]):
         return COMPOSITION_SIZE["vertical"]
@@ -254,53 +201,25 @@ def pick_size(detail: Dict[str, str]) -> Tuple[int, int]:
 
 
 def theme_from_preset(preset: str, category: str) -> str:
-    """
-    根据分类 + 预设名推题词主题。
-
-    规则:
-      1. 先查显式映射表
-      2. 查不到 → 画风类（japanese/gufeng）用「通用」
-      3. 再查不到 → 用预设名兜底
-    """
     PRESET_TO_THEME = {
-        # ---------- yokai ----------
-        "tengu":        "天狗",
-        "kappa":        "河童",
-        "kitsune":      "九尾狐",
-        "yuki_onna":    "雪女",
-        "oni":          "鬼",
-        "hyakki_yagyo": "百鬼夜行",
-        "noppera_bo":   "天狗",
-        "roku_ro_kubi": "天狗",
-
-        # ---------- genji ----------
-        "heian_court":    "观月",
-        "junihitoe":      "唐仕女",
-        "byobu_emaki":    "观月",
-        "moon_viewing":   "观月",
-        "cherry_blossom": "赏樱",
-
-        # ---------- tang ----------
-        "dunhuang":    "飞天",
-        "tang_beauty": "唐仕女",
-        "tang_palace": "唐仕女",
-        "tang_horse":  "通用",
-        "feitian":     "飞天",
+        "tengu": "天狗", "kappa": "河童", "kitsune": "九尾狐",
+        "yuki_onna": "雪女", "oni": "鬼", "hyakki_yagyo": "百鬼夜行",
+        "noppera_bo": "天狗", "roku_ro_kubi": "天狗",
+        "heian_court": "观月", "junihitoe": "唐仕女", "byobu_emaki": "观月",
+        "moon_viewing": "观月", "cherry_blossom": "赏樱",
+        "dunhuang": "飞天", "tang_beauty": "唐仕女", "tang_palace": "唐仕女",
+        "tang_horse": "通用", "feitian": "飞天",
     }
-
     if preset in PRESET_TO_THEME:
         return PRESET_TO_THEME[preset]
-
     if category in ("japanese", "gufeng"):
         return "通用"
-
     return preset
 
 
 # ============================================================
-# 自检（确保工具能正常 import）
+# 自检
 # ============================================================
-
 if __name__ == "__main__":
     print("=" * 70)
     print("  compose_artwork.py — 工具库自检")
@@ -311,9 +230,8 @@ if __name__ == "__main__":
     r = InscriptionRenderer()
     print(r.font_path.name if r.font_path else "（默认字体）")
     print(f"🔍 theme_from_preset('tengu', 'yokai'): {theme_from_preset('tengu', 'yokai')}")
-    print(f"🔍 theme_from_preset('shui_mo', 'gufeng'): {theme_from_preset('shui_mo', 'gufeng')}")
     print(f"🔍 pick_size({{'composition': 'horizontal'}}): {pick_size({'composition': 'horizontal'})}")
     print(f"🔍 load_config() keys: {list(load_config().keys())}")
     print("\n" + "=" * 70)
-    print("  ✅ 工具库自检完成（提示：CLI 请用 main.py）")
+    print("  ✅ 工具库自检完成")
     print("=" * 70)
