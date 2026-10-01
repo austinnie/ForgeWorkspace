@@ -24,3 +24,9 @@ def _load_env():
         return "(dotenv not installed)"
 
 _env_source = _load_env()
+
+# ControlNet 模块
+try:
+    from .controlnet import Controlnet
+except ImportError:
+    pass
