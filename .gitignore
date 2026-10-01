@@ -64,5 +64,4 @@ project_snapshot_*.txt
 project_code_dump.txt"models/" 
 "data/" 
 "models/" 
-"models/" 
-"data/" 
+"apps/sd_gui/models/" 
