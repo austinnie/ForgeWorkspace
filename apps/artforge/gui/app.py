@@ -163,7 +163,25 @@ class ArtForgeApp:
                         placeholder="low quality, blurry, watermark",
                         lines=2
                     )
-                
+
+                # 5. ArtForge 特色：后期处理与装裱
+                with gr.Accordion("️ ArtForge 特色后期与装裱", open=True):
+                    # 装裱方式（核心功能）
+                    composition_dd = gr.Dropdown(
+                        choices=["无 (仅画心)", "立轴 (9:16)", "横卷 (16:9)", "屏风 (4:3)", "团扇 (1:1)", "册页 (2x2)"],
+                        value="立轴 (9:16)",
+                        label="装裱方式",
+                        info="选择传统装裱格式，自动添加绫边、木轴等"
+                    )
+                    
+                    use_aging_cb = gr.Checkbox(label="添加古画做旧效果 (宣纸纹理/泛黄)", value=True)
+                    use_inscription_cb = gr.Checkbox(label="添加竖排题词与印章", value=True)
+                    inscription_theme_dd = gr.Dropdown(
+                        choices=["landscape", "portrait", "architecture", "yokai", "gufeng"],
+                        value="gufeng",
+                        label="题词主题"
+                    ) 
+                    
                 # 生成按钮
                 generate_btn = gr.Button("🎨 开始生成", variant="primary", size="lg")
             
@@ -228,7 +246,11 @@ class ArtForgeApp:
                 preset_dropdown,
                 aspect_radio,
                 prompt_input,
-                negative_input
+                negative_input,
+                composition_dd,  # 新增：装裱方式
+                use_aging_cb,    # 做旧处理
+                use_inscription_cb, 
+                inscription_theme_dd
             ],
             outputs=[output_image, output_info]
         )
@@ -245,158 +267,197 @@ class ArtForgeApp:
             print(f"⚠️ 获取模型列表失败: {e}")
             return ["获取模型列表失败"]
     
-    def _generate_image(self, engine_mode, api_provider, model_name, theme, preset, aspect, prompt, negative):
-        """生成图片的核心逻辑"""
+    def _generate_image(self, engine_mode, api_provider, model_name, theme, preset, aspect, prompt, negative, composition, use_aging, use_inscription, inscription_theme):
+        """ArtForge 统一生成入口 (含装裱与后期)"""
         try:
             start_time = datetime.now()
             width, height = self._parse_aspect_ratio(aspect)
             
-            # ========== 分支 1：本地模型 ==========
-            if engine_mode == "local":
-                if not FORGE_CORE_AVAILABLE:
-                    return None, "❌ ForgeCore 未安装，无法使用本地模型", ""
-                return self._generate_with_local(model_name, prompt, negative, width, height, theme, preset)
-            
-            # ========== 分支 2：API 引擎 ==========
-            elif engine_mode == "api":
-                # 🔥 修复：补全 theme 和 preset 参数的传递
-                return self._generate_with_api(api_provider, prompt, negative, width, height, theme, preset)
-                
-        except Exception as e:
-            import traceback
-            return None, f"❌ 生成失败: {str(e)}\n\n{traceback.format_exc()}", ""
-            
-        """生成图片的核心逻辑"""
-        try:
-            start_time = datetime.now()
-            width, height = self._parse_aspect_ratio(aspect)
+            #  核心修复：强制加入古画质感提示词，让 AI 直接在“旧纸”上作画
+            full_prompt = prompt
+            if theme: full_prompt = f"{theme}, {full_prompt}"
+            if preset: full_prompt = f"{preset}, {full_prompt}"
+            full_prompt += ", traditional Chinese painting, on aged xuan paper, ink wash texture, masterpiece, best quality"
             
             # ========== 分支 1：本地模型 ==========
             if engine_mode == "local":
                 if not FORGE_CORE_AVAILABLE:
                     return None, "❌ ForgeCore 未安装，无法使用本地模型"
-                return self._generate_with_local(model_name, prompt, negative, width, height)
+                return self._generate_with_local(model_name, full_prompt, negative, width, height, composition, use_aging, use_inscription, inscription_theme)
             
             # ========== 分支 2：API 引擎 ==========
             elif engine_mode == "api":
-                return self._generate_with_api(api_provider, prompt, negative, width, height)
+                return self._generate_with_api(api_provider, full_prompt, negative, width, height, composition, use_aging, use_inscription, inscription_theme)
                 
         except Exception as e:
             import traceback
             return None, f"❌ 生成失败: {str(e)}\n\n{traceback.format_exc()}"
-    
-    def _generate_image(self, engine_mode, api_provider, model_name, theme, preset, aspect, prompt, negative):
-        """生成图片的核心逻辑"""
-        try:
-            start_time = datetime.now()
-            width, height = self._parse_aspect_ratio(aspect)
-            
-            # ========== 分支 1：本地模型 ==========
-            if engine_mode == "local":
-                if not FORGE_CORE_AVAILABLE:
-                    return None, "❌ ForgeCore 未安装，无法使用本地模型", ""
-                return self._generate_with_local(model_name, prompt, negative, width, height, theme, preset)
-            
-            # ========== 分支 2：API 引擎 ==========
-            elif engine_mode == "api":
-                # 🔥 修复：补全 theme 和 preset 参数的传递
-                return self._generate_with_api(api_provider, prompt, negative, width, height, theme, preset)
-                
-        except Exception as e:
-            import traceback
-            return None, f"❌ 生成失败: {str(e)}\n\n{traceback.format_exc()}", ""
 
-    def _generate_with_api(self, provider, prompt, negative, width, height, theme, preset):
-        """真实接入 ForgeCore API 引擎 (严格对齐 BaseEngine.generate_single 接口)"""
+    def _generate_with_api(self, provider, prompt, negative, width, height, composition, use_aging, use_inscription, inscription_theme):
+        """真实接入 ForgeCore API 引擎"""
         try:
-            # 1. 组装完整提示词
-            full_prompt = prompt
-            if theme: full_prompt = f"{theme}, {full_prompt}"
-            if preset: full_prompt = f"{preset}, {full_prompt}"
-            
             log = [f"🚀 正在调用 API 引擎: {provider}", f"📐 尺寸: {width}x{height}"]
             
-            # 2. 导入真实的工厂函数和配置加载器
             from forgecore.engines import create_engine
             from gui.common import load_env_config
             
-            # 3. 获取配置并创建引擎 (create_engine 需要 provider 和 config 两个参数)
             config = load_env_config()
             log.append("⏳ 正在初始化引擎并发送请求...")
             engine = create_engine(provider, config)
             
-            # 4. 🔥 核心修复：调用 generate_single (这是您 BaseEngine 中定义的真实方法名)
-            # 参数严格对齐：prompt, negative, width, height, steps, cfg, seed
-            log.append(f"📝 提示词: {full_prompt[:50]}...")
+            log.append(f"📝 提示词: {prompt[:50]}...")
             image = engine.generate_single(
-                prompt=full_prompt,
-                negative=negative,
-                width=width,
-                height=height,
-                steps=25,  # 默认步数
-                cfg=7.5,   # 默认 CFG
-                seed=None  # 随机种子
+                prompt=prompt, negative=negative, width=width, height=height,
+                steps=25, cfg=7.5, seed=None
             )
             
             log.append("✅ API 返回成功，正在处理结果...")
             
-            # 5. 处理并保存结果 (兼容 PIL Image 或 URL)
-            return self._save_engine_output(image, f"api_{provider}", log)
+            # 🔥 核心：在保存前应用后期处理 (包含装裱)
+            image = self._apply_post_process(image, composition, use_aging, use_inscription, inscription_theme, log)
             
+            return self._save_engine_output(image, f"api_{provider}", log)
         except ImportError as e:
-            return None, f"❌ 导入失败: {e}", ""
+            return None, f" 导入失败: {e}"
         except Exception as e:
             import traceback
-            return None, f" API 生成失败: {str(e)}\n\n{traceback.format_exc()}", ""
+            return None, f"❌ API 生成失败: {str(e)}\n\n{traceback.format_exc()}"
 
-    def _generate_with_local(self, model_name, prompt, negative, width, height, theme, preset):
-        """真实接入本地 Diffusers 引擎 (严格对齐我们之前写的 local_engine.py)"""
+    def _generate_with_local(self, model_name, prompt, negative, width, height, composition, use_aging, use_inscription, inscription_theme):
+        """真实接入本地 Diffusers 引擎"""
         try:
-            full_prompt = prompt
-            if theme: full_prompt = f"{theme}, {full_prompt}"
-            if preset: full_prompt = f"{preset}, {full_prompt}"
-            
             log = [f"💻 正在使用本地模型: {model_name}", f"📐 尺寸: {width}x{height}"]
-            
             if not FORGE_CORE_AVAILABLE:
-                return None, " ForgeCore 未就绪", ""
+                return None, "❌ ForgeCore 未就绪"
 
-            # 1. 获取模型绝对路径
             model_type = "sd15" if "sd15" in model_name.lower() or "v1" in model_name.lower() else "sdxl"
             models = ModelRegistry.scan_checkpoints(model_type)
             model_path = next((m["absolute_path"] for m in models if m["name"] == model_name), None)
             
             if not model_path:
-                return None, f"❌ 找不到模型文件: {model_name}", ""
+                return None, f"❌ 找不到模型文件: {model_name}"
             
-            log.append(f"📂 绝对路径: {model_path}")
+            log.append(f" 绝对路径: {model_path}")
             
-            # 2. 加载本地引擎
             from forgecore.engines.local_engine import DiffusersEngine
-            
-            log.append("⏳ 正在加载模型到内存 (首次可能需要 30-60 秒)...")
+            log.append("⏳ 正在加载模型到内存...")
             engine = DiffusersEngine(model_type=model_type, device="CPU")
             engine.load_model(model_path)
             
-            # 3. 执行推理 (注意：我们之前写的 local_engine.py 里方法名叫 generate)
-            log.append("🎨 正在执行本地推理...")
-            image = engine.generate(
-                prompt=full_prompt,
-                width=width,
-                height=height,
-                negative_prompt=negative
-            )
+            log.append(" 正在执行本地推理...")
+            image = engine.generate(prompt=prompt, negative_prompt=negative, width=width, height=height)
             
             log.append("✅ 本地推理完成！")
-            return self._save_engine_output(image, "local", log)
             
+            # 🔥 核心：在保存前应用后期处理 (包含装裱)
+            image = self._apply_post_process(image, composition, use_aging, use_inscription, inscription_theme, log)
+            
+            return self._save_engine_output(image, "local", log)
         except Exception as e:
             import traceback
-            return None, f"❌ 本地生成失败: {str(e)}\n\n{traceback.format_exc()}", ""
+            return None, f"❌ 本地生成失败: {str(e)}\n\n{traceback.format_exc()}"
             
     # ============================================================
     # 🔥 新增：通用的引擎结果处理与保存辅助方法
     # ============================================================
+
+    def _apply_post_process(self, image, composition, use_aging, use_inscription, inscription_theme, log_list):
+        """ArtForge 标准后期流水线：题词 -> 装裱 -> 边缘做旧"""
+        if image is None:
+            return None
+            
+        try:
+            from PIL import Image
+            if image.mode != 'RGBA':
+                image = image.convert('RGBA')
+                
+            width, height = image.size
+            
+            # 1. 题词与印章 (在画心上完成)
+            if use_inscription:
+                try:
+                    from forgecore.post_process.inscription_generator import InscriptionGenerator
+                    # 修复导入路径
+                    import sys
+                    from pathlib import Path
+                    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+                    from compose_artwork import InscriptionRenderer
+                    from forgecore.post_process.seal_generator import SealGenerator
+                    
+                    log_list.append("✍️ 正在生成题词...")
+                    ig = InscriptionGenerator()
+                    inscription_text = "山水有清音" 
+                    try:
+                        text, _ = ig.generate(theme=inscription_theme, format="auto", return_meta=True)
+                        if text: inscription_text = text
+                    except: pass
+                    
+                    font_size = max(24, int(min(width, height) * 0.045))
+                    renderer = InscriptionRenderer()
+                    image = renderer.render(
+                        image, inscription_text, font_size=font_size,
+                        color=(45, 40, 35), position="top_right",
+                        margin=int(min(width, height) * 0.055),
+                        max_chars_per_col=8
+                    )
+                    log_list.append(f"✅ 题词完成: {inscription_text}")
+                    
+                    log_list.append("🔴 正在添加印章...")
+                    sg = SealGenerator()
+                    image = sg.apply_scheme(image, "東方藝術", scheme="default", margin_ratio=0.05)
+                    log_list.append("✅ 印章完成")
+                except Exception as e:
+                    log_list.append(f"⚠️ 题词/印章失败 (跳过): {e}")
+
+            # 2. 装裱 (核心功能：将画心放入立轴/横卷等)
+            if composition and composition != "无 (仅画心)":
+                try:
+                    # 导入装裱器
+                    import sys
+                    from pathlib import Path
+                    # 确保能导入 apps/artforge/services
+                    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+                    from services.scroll_composer import ScrollComposer
+                    
+                    log_list.append(f"🖼️ 正在进行 {composition} 装裱...")
+                    composer = ScrollComposer()
+                    
+                    # 映射 UI 选项到 ScrollComposer 的 composition 参数
+                    comp_map = {
+                        "立轴 (9:16)": "vertical",
+                        "横卷 (16:9)": "horizontal",
+                        "屏风 (4:3)": "byobu",
+                        "团扇 (1:1)": "fan",
+                        "册页 (2x2)": "album"
+                    }
+                    comp_type = comp_map.get(composition, "vertical")
+                    
+                    # 调用装裱方法
+                    image = composer.compose(image, comp_type)
+                    log_list.append(f"✅ 装裱完成 ({composition})")
+                except Exception as e:
+                    log_list.append(f"⚠️ 装裱失败 (跳过): {e}")
+                    import traceback
+                    log_list.append(f"   错误详情: {str(e)}")
+
+            # 3. 边缘做旧 (仅对装裱后的整体进行轻微泛黄/磨损)
+            if use_aging:
+                try:
+                    from forgecore.post_process.aging_processor import AgingProcessor
+                    log_list.append(" 正在应用边缘做旧效果...")
+                    aging = AgingProcessor()
+                    # 降低强度，仅做边缘处理
+                    image = aging.apply(image.convert("RGB"), texture="xuan_paper", strength=0.3)
+                    image = image.convert("RGBA")
+                    log_list.append("✅ 边缘做旧完成")
+                except Exception as e:
+                    log_list.append(f"⚠️ 做旧失败 (跳过): {e}")
+
+            return image
+        except Exception as e:
+            log_list.append(f"❌ 后期处理整体失败: {e}")
+            return image
+            
     def _save_engine_output(self, result, prefix, log_list):
         """
         兼容处理不同引擎的返回结果 (PIL Image, URL 字符串, 或 Dict)
