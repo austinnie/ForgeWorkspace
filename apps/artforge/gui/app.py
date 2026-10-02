@@ -23,7 +23,7 @@ class ArtForgeApp:
         
     def build_ui(self):
         """构建 Gradio 界面"""
-        with gr.Blocks(title="ArtForge • 东方艺术生成工坊", theme=gr.themes.Soft()) as demo:
+        with gr.Blocks(title="ArtForge • 东方艺术生成工坊") as demo:
             gr.Markdown("""
             # 🎨 ArtForge • 东方艺术生成工坊
             """)
@@ -51,20 +51,44 @@ class ArtForgeApp:
             with gr.Column(scale=1):
                 gr.Markdown("### 🎨 生图参数")
                 
-                # ===== 新增：引擎选择区域 =====
+                # ===== 引擎选择区域 (重构版) =====
                 with gr.Group():
                     gr.Markdown("#### 🔌 引擎选择")
-                    engine_radio = gr.Radio(
+                    
+                    # 1. 大模式切换：API vs 本地
+                    engine_mode = gr.Radio(
                         choices=[
-                            ("☁️ API 引擎 (Pollinations)", "api"),
+                            ("☁️ API 引擎 (云端)", "api"),
                             ("💻 本地模型 (OpenVINO/Diffusers)", "local")
                         ],
-                        value="api" if not FORGE_CORE_AVAILABLE else "local",
-                        label="生成引擎",
-                        info="选择使用云端 API 还是本地模型"
+                        value="api",
+                        label="生成模式",
+                        info="选择使用云端 API 还是本地离线模型"
                     )
                     
-                    # 本地模型配置（默认隐藏，选择本地模型时显示）
+                    # 2. API 提供商选择 (默认隐藏，选 API 时显示)
+                    with gr.Group(visible=True) as api_config_group:
+                        api_provider = gr.Dropdown(
+                            choices=[
+                                ("Pollinations (免费/推荐)", "pollinations"),
+                                ("Free API (社区免费)", "freeapi"),
+                                ("Agnes AI", "agnes"),
+                                ("SiliconFlow (硅基流动)", "siliconflow"),
+                                ("HuggingFace", "huggingface"),
+                                ("Replicate", "replicate"),
+                                ("Stability AI", "stability"),
+                                ("通义万相 (Tongyi)", "tongyi"),
+                                ("即梦 (Yige)", "yige"),
+                                ("腾讯混元 (Hunyuan)", "hunyuan"),
+                                ("OpenRouter", "openrouter"),
+                            ],
+                            value="pollinations",
+                            label="选择 API 提供商",
+                            info="部分引擎需要配置 API Key"
+                        )
+                        gr.Markdown("💡 *提示：Pollinations 和 FreeAPI 完全免费，无需配置 Key。*")
+
+                    # 3. 本地模型配置 (默认隐藏，选本地时显示)
                     with gr.Group(visible=False) as local_config_group:
                         model_type_dropdown = gr.Dropdown(
                             choices=["SD1.5", "SDXL"],
@@ -80,6 +104,20 @@ class ArtForgeApp:
                         
                         # 刷新按钮
                         refresh_btn = gr.Button("🔄 刷新模型列表", size="sm")
+
+                # ========== 事件绑定：引擎模式切换 ==========
+                def on_engine_mode_change(mode):
+                    """切换 API/本地 模式时，显示/隐藏对应配置区"""
+                    if mode == "api":
+                        return gr.update(visible=True), gr.update(visible=False)
+                    else:
+                        return gr.update(visible=False), gr.update(visible=True)
+                
+                engine_mode.change(
+                    fn=on_engine_mode_change,
+                    inputs=[engine_mode],
+                    outputs=[api_config_group, local_config_group]
+                )
                 
                 # 原有参数
                 with gr.Group():
@@ -145,10 +183,11 @@ class ArtForgeApp:
             else:
                 return gr.update(visible=False), gr.update(visible=False), "✅ 已切换到 API 引擎模式"
         
-        engine_radio.change(
-            fn=on_engine_change,
-            inputs=[engine_radio],
-            outputs=[local_config_group, model_dropdown, output_info]
+        # ✅ 正确代码
+        engine_mode.change(
+           fn=on_engine_change,
+           inputs=[engine_mode],
+           outputs=[local_config_group, model_dropdown, output_info]
         )
         
         # 模型类型切换
@@ -180,8 +219,9 @@ class ArtForgeApp:
         generate_btn.click(
             fn=self._generate_image,
             inputs=[
-                engine_radio,
-                model_dropdown,
+                engine_mode,          # 新增：api 或 local
+                api_provider,         # 新增：具体的 API 名称
+                model_dropdown,       # 本地模型名
                 theme_dropdown,
                 preset_dropdown,
                 aspect_radio,
@@ -203,43 +243,104 @@ class ArtForgeApp:
             print(f"⚠️ 获取模型列表失败: {e}")
             return ["获取模型列表失败"]
     
-    def _generate_image(self, engine_type, model_name, theme, preset, aspect, prompt, negative):
+    def _generate_image(self, engine_mode, api_provider, model_name, theme, preset, aspect, prompt, negative):
         """生成图片的核心逻辑"""
         try:
             start_time = datetime.now()
-            
-            # 解析画幅比例
             width, height = self._parse_aspect_ratio(aspect)
             
-            # ========== API 引擎分支 ==========
-            if engine_type == "api":
-                return self._generate_with_api(prompt, negative, width, height, theme, preset)
-            
-            # ========== 本地模型分支 ==========
-            elif engine_type == "local":
+            # ========== 分支 1：本地模型 ==========
+            if engine_mode == "local":
                 if not FORGE_CORE_AVAILABLE:
-                    return None, "❌ ForgeCore 未安装，无法使用本地模型"
-                
+                    return None, "❌ ForgeCore 未安装，无法使用本地模型", ""
                 return self._generate_with_local(model_name, prompt, negative, width, height, theme, preset)
             
-            elapsed = (datetime.now() - start_time).total_seconds()
-            return None, f"⚠️ 未知的引擎类型: {engine_type}"
-            
+            # ========== 分支 2：API 引擎 ==========
+            elif engine_mode == "api":
+                # 🔥 修复：补全 theme 和 preset 参数的传递
+                return self._generate_with_api(api_provider, prompt, negative, width, height, theme, preset)
+                
         except Exception as e:
             import traceback
-            return None, f" 生成失败: {str(e)}\n\n{traceback.format_exc()}"
+            return None, f"❌ 生成失败: {str(e)}\n\n{traceback.format_exc()}", ""
+            
+        """生成图片的核心逻辑"""
+        try:
+            start_time = datetime.now()
+            width, height = self._parse_aspect_ratio(aspect)
+            
+            # ========== 分支 1：本地模型 ==========
+            if engine_mode == "local":
+                if not FORGE_CORE_AVAILABLE:
+                    return None, "❌ ForgeCore 未安装，无法使用本地模型"
+                return self._generate_with_local(model_name, prompt, negative, width, height)
+            
+            # ========== 分支 2：API 引擎 ==========
+            elif engine_mode == "api":
+                return self._generate_with_api(api_provider, prompt, negative, width, height)
+                
+        except Exception as e:
+            import traceback
+            return None, f"❌ 生成失败: {str(e)}\n\n{traceback.format_exc()}"
     
-    def _generate_with_api(self, prompt, negative, width, height, theme, preset):
-        """使用 API 引擎生成"""
-        # TODO: 集成你原有的 Pollinations API 逻辑
-        # 这里先返回示例
-        return None, f"API 引擎生成（待实现）\n提示词: {prompt}\n尺寸: {width}x{height}"
-    
+    def _generate_image(self, engine_mode, api_provider, model_name, theme, preset, aspect, prompt, negative):
+        """生成图片的核心逻辑"""
+        try:
+            start_time = datetime.now()
+            width, height = self._parse_aspect_ratio(aspect)
+            
+            # ========== 分支 1：本地模型 ==========
+            if engine_mode == "local":
+                if not FORGE_CORE_AVAILABLE:
+                    return None, "❌ ForgeCore 未安装，无法使用本地模型", ""
+                return self._generate_with_local(model_name, prompt, negative, width, height, theme, preset)
+            
+            # ========== 分支 2：API 引擎 ==========
+            elif engine_mode == "api":
+                # 🔥 修复：补全 theme 和 preset 参数的传递
+                return self._generate_with_api(api_provider, prompt, negative, width, height, theme, preset)
+                
+        except Exception as e:
+            import traceback
+            return None, f"❌ 生成失败: {str(e)}\n\n{traceback.format_exc()}", ""
+
+    def _generate_with_api(self, provider, prompt, negative, width, height, theme=None, preset=None):
+        """调用指定的 API 引擎"""
+        log = f"✅ 使用 API 引擎: {provider}\n"
+        log += f"提示词: {prompt}\n"
+        log += f"尺寸: {width}x{height}\n"
+        if theme:
+            log += f"主题: {theme}\n"
+        if preset:
+            log += f"预设: {preset}\n"
+        
+        # 这里可以接入你原有的 api_engines.create_engine 逻辑
+        if provider == "pollinations":
+            log += "🚀 正在调用 Pollinations API (免费)..."
+            # TODO: 调用 pollinations.generate(...)
+        elif provider == "agnes":
+            log += "🚀 正在调用 Agnes AI..."
+            # TODO: 调用 agnes.generate(...)
+        else:
+            log += f"🚀 正在调用 {provider}..."
+            
+        return None, log + "\n(具体推理代码待接入)"
+        
     def _generate_with_local(self, model_name, prompt, negative, width, height, theme, preset):
         """使用本地模型生成"""
         try:
-            # 1. 获取模型绝对路径
+            log = ["🚀 开始本地模型生成..."]
+            log.append(f"📦 模型: {model_name}")
+            log.append(f"📐 尺寸: {width}x{height}")
+            log.append(f"🎨 主题: {theme} | 预设: {preset}")
+            
+            if not FORGE_CORE_AVAILABLE:
+                return None, "\n".join(log) + "\n❌ ForgeCore 未就绪", ""
+
+            # 1. 确定模型类型 (简单判断)
             model_type = "sd15" if "sd15" in model_name.lower() or "v1" in model_name.lower() else "sdxl"
+            
+            # 2. 获取模型绝对路径
             models = ModelRegistry.scan_checkpoints(model_type)
             model_path = None
             for m in models:
@@ -248,40 +349,33 @@ class ArtForgeApp:
                     break
             
             if not model_path:
-                return None, f"❌ 未找到模型: {model_name}"
+                return None, "\n".join(log) + f"\n❌ 未找到模型文件: {model_name}", ""
             
-            # 2. 获取引擎（这里应该使用 ForgeCore 的本地引擎）
-            # TODO: 集成 ForgeCore 的 OpenVINOEngine 或 DiffusersEngine
-            engine = get_engine(engine_type="local", model_type=model_type)
+            log.append(f"📂 绝对路径: {model_path}")
             
-            # 3. 加载模型（如果还没加载）
-            if not hasattr(engine, 'model') or engine.model is None:
-                engine.load_model(model_path)
+            # 3. 获取并加载本地引擎 (这里使用我们之前写好的 DiffusersEngine)
+            from forgecore.engines.local_engine import LocalEngine
             
-            # 4. 生成图片
-            # TODO: 调用 engine.generate()
-            # result = engine.generate(
-            #     prompt=prompt,
-            #     negative_prompt=negative,
-            #     width=width,
-            #     height=height,
-            #     ...
-            # )
+            log.append("⏳ 正在加载模型到内存 (首次加载可能需要 30-60 秒，请耐心等待)...")
+            engine = LocalEngine(model_type=model_type, device="CPU")
+            engine.load_model(model_path)
             
-            elapsed = datetime.now().strftime("%H:%M:%S")
-            return None, f"""✅ 本地模型生成（框架已就绪）
-模型: {model_name}
-路径: {model_path}
-提示词: {prompt}
-尺寸: {width}x{height}
-时间: {elapsed}
-
-⚠️ 需要集成具体的推理代码"""
+            # 4. 执行生成 (这里先返回模拟日志，后续你可以接入 engine.generate)
+            log.append("✅ 模型加载完成！")
+            log.append("🎨 正在执行推理... (此处为框架演示，真实推理代码待接入 engine.generate)")
+            
+            # 模拟生成结果路径
+            result_path = str(Paths.OUTPUT_DIR / f"local_gen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+            log.append(f"💾 预计保存至: {result_path}")
+            
+            final_prompt = f"[{theme}] {preset}, {prompt}"
+            return None, "\n".join(log), final_prompt
             
         except Exception as e:
             import traceback
-            return None, f"❌ 本地生成失败: {str(e)}\n\n{traceback.format_exc()}"
-    
+            return None, f"❌ 本地生成失败: {str(e)}\n\n{traceback.format_exc()}", ""
+
+
     def _parse_aspect_ratio(self, aspect: str) -> tuple:
         """解析画幅比例"""
         ratios = {
@@ -329,4 +423,4 @@ def build_ui():
 
 if __name__ == "__main__":
     demo = build_ui()
-    demo.launch(inbrowser=True, share=False)
+    demo.launch(inbrowser=True, share=False, theme=gr.themes.Soft())
