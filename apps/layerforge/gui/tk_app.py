@@ -29,6 +29,9 @@ try:
 except ImportError:
     pass
 
+# 在 gradio_app.py 和 tk_app.py 顶部添加或修改：
+from config import list_available_presets, load_preset
+
 # LayerForge 核心模块
 from config import list_available_loras
 from core.loader import load_all_layers

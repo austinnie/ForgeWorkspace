@@ -14,10 +14,65 @@ from typing import Optional
 from dotenv import load_dotenv
 load_dotenv()  # 加载 .env 文件
 
+# ==================== 路径配置 ====================
+PROJECT_ROOT = Path(__file__).resolve().parent
+
+# 🔥 修改：指向共享预设库的 sketch_forge
+PRESET_DIR = PROJECT_ROOT.parent.parent / "shared_assets" / "presets_by_app" / "sketch_forge"
+
+
 MODEL_CONFIG_FILE = Path(__file__).parent / ".model_config"
 LORA_CONFIG_FILE = Path(__file__).parent / ".lora_config"
 CACHE_FILE = Path(__file__).parent / ".cache.json"
 
+def list_available_presets() -> list:
+    """扫描 sketch_forge 目录下的所有预设（支持子目录结构）"""
+    if not PRESET_DIR.exists():
+        print(f"❌ 预设目录不存在: {PRESET_DIR}")
+        return []
+    
+    presets = []
+    # 递归查找所有 .py 文件
+    for py_file in PRESET_DIR.rglob("*.py"):
+        if py_file.name in ("__init__.py", "index.py") or py_file.name.startswith('_'):
+            continue
+        try:
+            # 使用相对路径作为 ID（例如: "mecha/dragon_sketch"）
+            relative_path = py_file.relative_to(PRESET_DIR)
+            preset_id = str(relative_path.with_suffix('')).replace(os.sep, '/')
+            presets.append(preset_id)
+        except ValueError:
+            presets.append(py_file.stem)
+            
+    return sorted(list(set(presets)))
+
+def load_preset(preset_id: str) -> dict:
+    """根据 ID 加载预设（兼容子目录结构）"""
+    # preset_id 可能是 "mecha/dragon_sketch" 或 "dragon_sketch"
+    
+    # 1. 尝试直接匹配完整路径
+    target_file = PRESET_DIR / f"{preset_id.replace('/', os.sep)}.py"
+    
+    # 2. 如果找不到，尝试在整个目录下模糊匹配文件名
+    if not target_file.exists():
+        for f in PRESET_DIR.rglob(f"{preset_id.split('/')[-1]}.py"):
+            target_file = f
+            break
+    
+    if not target_file.exists():
+        print(f"❌ 预设文件不存在: {preset_id}")
+        return None
+        
+    try:
+        spec = importlib.util.spec_from_file_location(f"preset_{preset_id}", target_file)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        if hasattr(module, "PRESET"):
+            return module.PRESET
+    except Exception as e:
+        print(f"⚠️ 加载预设失败 {preset_id}: {e}")
+    return None
+    
 # ==================== 读取或写入模型路径 ====================
 
 def get_saved_model_path():
