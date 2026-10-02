@@ -98,15 +98,40 @@ class DiffusersEngine(BaseLocalEngine):
             
         print(f"   -> 管道初始化完成，准备就绪。")
 
-    def generate(self, prompt: str, **kwargs):
+    def generate(self, prompt: str, negative_prompt: str = "", width: int = 512, height: int = 512, 
+                 num_inference_steps: int = 25, guidance_scale: float = 7.5, seed: int = None) -> Image.Image:
+        """执行真实的本地推理"""
         if self.pipeline is None:
             raise RuntimeError("模型未加载，请先调用 load_model()")
-            
+        
         print(f"🎨 开始推理: {prompt[:50]}...")
-        # 这里先返回 None，后续接入 UI 的生成按钮逻辑
-        # image = self.pipeline(prompt).images[0]
-        # return image
-        return None
+        print(f"⚙️ 参数: steps={num_inference_steps}, cfg={guidance_scale}, seed={seed}")
+        
+        import torch
+        from PIL import Image
+        
+        # 设置随机种子
+        if seed is None or seed == -1:
+            seed = torch.randint(0, 2**32 - 1, (1,)).item()
+        generator = torch.Generator("cpu").manual_seed(seed)
+        
+        # 执行推理
+        print("🔄 正在生成图片...")
+        result = self.pipeline(
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            width=width,
+            height=height,
+            num_inference_steps=num_inference_steps,
+            guidance_scale=guidance_scale,
+            generator=generator
+        )
+        
+        # 提取图片
+        image = result.images[0]
+        print(f"✅ 推理完成，图片尺寸: {image.size}")
+        
+        return image
 
 class OpenVINOEngine(BaseLocalEngine):
     """
