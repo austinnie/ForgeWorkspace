@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from typing import Dict, Any
 from datetime import datetime
+# 在 import 区域添加这一行
+from gui.common import load_env_config
 
 # 导入 ForgeCore 配置和引擎
 try:
@@ -304,76 +306,142 @@ class ArtForgeApp:
             import traceback
             return None, f"❌ 生成失败: {str(e)}\n\n{traceback.format_exc()}", ""
 
-    def _generate_with_api(self, provider, prompt, negative, width, height, theme=None, preset=None):
-        """调用指定的 API 引擎"""
-        log = f"✅ 使用 API 引擎: {provider}\n"
-        log += f"提示词: {prompt}\n"
-        log += f"尺寸: {width}x{height}\n"
-        if theme:
-            log += f"主题: {theme}\n"
-        if preset:
-            log += f"预设: {preset}\n"
-        
-        # 这里可以接入你原有的 api_engines.create_engine 逻辑
-        if provider == "pollinations":
-            log += "🚀 正在调用 Pollinations API (免费)..."
-            # TODO: 调用 pollinations.generate(...)
-        elif provider == "agnes":
-            log += "🚀 正在调用 Agnes AI..."
-            # TODO: 调用 agnes.generate(...)
-        else:
-            log += f"🚀 正在调用 {provider}..."
-            
-        return None, log + "\n(具体推理代码待接入)"
-        
-    def _generate_with_local(self, model_name, prompt, negative, width, height, theme, preset):
-        """使用本地模型生成"""
+    def _generate_with_api(self, provider, prompt, negative, width, height, theme, preset):
+        """真实接入 ForgeCore API 引擎 (严格对齐 BaseEngine.generate_single 接口)"""
         try:
-            log = ["🚀 开始本地模型生成..."]
-            log.append(f"📦 模型: {model_name}")
-            log.append(f"📐 尺寸: {width}x{height}")
-            log.append(f"🎨 主题: {theme} | 预设: {preset}")
+            # 1. 组装完整提示词
+            full_prompt = prompt
+            if theme: full_prompt = f"{theme}, {full_prompt}"
+            if preset: full_prompt = f"{preset}, {full_prompt}"
+            
+            log = [f"🚀 正在调用 API 引擎: {provider}", f"📐 尺寸: {width}x{height}"]
+            
+            # 2. 导入真实的工厂函数和配置加载器
+            from forgecore.engines import create_engine
+            from gui.common import load_env_config
+            
+            # 3. 获取配置并创建引擎 (create_engine 需要 provider 和 config 两个参数)
+            config = load_env_config()
+            log.append("⏳ 正在初始化引擎并发送请求...")
+            engine = create_engine(provider, config)
+            
+            # 4. 🔥 核心修复：调用 generate_single (这是您 BaseEngine 中定义的真实方法名)
+            # 参数严格对齐：prompt, negative, width, height, steps, cfg, seed
+            log.append(f"📝 提示词: {full_prompt[:50]}...")
+            image = engine.generate_single(
+                prompt=full_prompt,
+                negative=negative,
+                width=width,
+                height=height,
+                steps=25,  # 默认步数
+                cfg=7.5,   # 默认 CFG
+                seed=None  # 随机种子
+            )
+            
+            log.append("✅ API 返回成功，正在处理结果...")
+            
+            # 5. 处理并保存结果 (兼容 PIL Image 或 URL)
+            return self._save_engine_output(image, f"api_{provider}", log)
+            
+        except ImportError as e:
+            return None, f"❌ 导入失败: {e}", ""
+        except Exception as e:
+            import traceback
+            return None, f" API 生成失败: {str(e)}\n\n{traceback.format_exc()}", ""
+
+    def _generate_with_local(self, model_name, prompt, negative, width, height, theme, preset):
+        """真实接入本地 Diffusers 引擎 (严格对齐我们之前写的 local_engine.py)"""
+        try:
+            full_prompt = prompt
+            if theme: full_prompt = f"{theme}, {full_prompt}"
+            if preset: full_prompt = f"{preset}, {full_prompt}"
+            
+            log = [f"💻 正在使用本地模型: {model_name}", f"📐 尺寸: {width}x{height}"]
             
             if not FORGE_CORE_AVAILABLE:
-                return None, "\n".join(log) + "\n❌ ForgeCore 未就绪", ""
+                return None, " ForgeCore 未就绪", ""
 
-            # 1. 确定模型类型 (简单判断)
+            # 1. 获取模型绝对路径
             model_type = "sd15" if "sd15" in model_name.lower() or "v1" in model_name.lower() else "sdxl"
-            
-            # 2. 获取模型绝对路径
             models = ModelRegistry.scan_checkpoints(model_type)
-            model_path = None
-            for m in models:
-                if m["name"] == model_name:
-                    model_path = m["absolute_path"]
-                    break
+            model_path = next((m["absolute_path"] for m in models if m["name"] == model_name), None)
             
             if not model_path:
-                return None, "\n".join(log) + f"\n❌ 未找到模型文件: {model_name}", ""
+                return None, f"❌ 找不到模型文件: {model_name}", ""
             
             log.append(f"📂 绝对路径: {model_path}")
             
-            # 3. 获取并加载本地引擎 (这里使用我们之前写好的 DiffusersEngine)
-            from forgecore.engines.local_engine import LocalEngine
+            # 2. 加载本地引擎
+            from forgecore.engines.local_engine import DiffusersEngine
             
-            log.append("⏳ 正在加载模型到内存 (首次加载可能需要 30-60 秒，请耐心等待)...")
-            engine = LocalEngine(model_type=model_type, device="CPU")
+            log.append("⏳ 正在加载模型到内存 (首次可能需要 30-60 秒)...")
+            engine = DiffusersEngine(model_type=model_type, device="CPU")
             engine.load_model(model_path)
             
-            # 4. 执行生成 (这里先返回模拟日志，后续你可以接入 engine.generate)
-            log.append("✅ 模型加载完成！")
-            log.append("🎨 正在执行推理... (此处为框架演示，真实推理代码待接入 engine.generate)")
+            # 3. 执行推理 (注意：我们之前写的 local_engine.py 里方法名叫 generate)
+            log.append("🎨 正在执行本地推理...")
+            image = engine.generate(
+                prompt=full_prompt,
+                width=width,
+                height=height,
+                negative_prompt=negative
+            )
             
-            # 模拟生成结果路径
-            result_path = str(Paths.OUTPUT_DIR / f"local_gen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
-            log.append(f"💾 预计保存至: {result_path}")
-            
-            final_prompt = f"[{theme}] {preset}, {prompt}"
-            return None, "\n".join(log), final_prompt
+            log.append("✅ 本地推理完成！")
+            return self._save_engine_output(image, "local", log)
             
         except Exception as e:
             import traceback
             return None, f"❌ 本地生成失败: {str(e)}\n\n{traceback.format_exc()}", ""
+            
+    # ============================================================
+    # 🔥 新增：通用的引擎结果处理与保存辅助方法
+    # ============================================================
+    def _save_engine_output(self, result, prefix, log_list):
+        """
+        兼容处理不同引擎的返回结果 (PIL Image, URL 字符串, 或 Dict)
+        """
+        if result is None:
+            return None, "\n".join(log_list) + "\n⚠️ 引擎返回为空，请检查 API Key 或模型配置。", ""
+            
+        final_image = None
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        save_path = Paths.OUTPUT_DIR / f"{prefix}_{timestamp}.png"
+        
+        try:
+            # 情况 1: 返回的是 PIL Image 对象
+            if hasattr(result, 'save'):
+                final_image = result
+                
+            # 情况 2: 返回的是 URL 字符串 (如 Pollinations 直接返回图片链接)
+            elif isinstance(result, str) and result.startswith('http'):
+                import requests
+                log_list.append(f" 正在下载图片: {result[:50]}...")
+                response = requests.get(result, timeout=60)
+                response.raise_for_status()
+                from PIL import Image
+                import io
+                final_image = Image.open(io.BytesIO(response.content))
+                
+            # 情况 3: 返回的是字典 (如 {'image': ..., 'url': ...})
+            elif isinstance(result, dict):
+                if 'image' in result and hasattr(result['image'], 'save'):
+                    final_image = result['image']
+                elif 'url' in result and result['url'].startswith('http'):
+                    # 递归调用处理 URL
+                    return self._save_engine_output(result['url'], prefix, log_list)
+                    
+            # 保存文件
+            if final_image:
+                Paths.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+                final_image.save(save_path)
+                log_list.append(f"💾 图片已保存: {save_path}")
+                return str(save_path), "\n".join(log_list), ""
+            else:
+                return None, "\n".join(log_list) + "\n️ 无法识别引擎返回的数据格式。", ""
+                
+        except Exception as e:
+            return None, "\n".join(log_list) + f"\n❌ 保存图片时出错: {str(e)}", ""
 
 
     def _parse_aspect_ratio(self, aspect: str) -> tuple:
