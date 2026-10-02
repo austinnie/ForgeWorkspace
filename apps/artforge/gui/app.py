@@ -14,7 +14,8 @@ from typing import Dict, List, Any, Optional
 # ============================================================
 APP_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-PRESETS_DIR = APP_ROOT / "presets"
+# 🔥 已切换为共享东方美学库
+PRESETS_DIR = PROJECT_ROOT / "shared_assets" / "presets_by_app" / "oriental_forge"
 
 if str(PROJECT_ROOT) not in sys.path: sys.path.insert(0, str(PROJECT_ROOT))
 if str(APP_ROOT) not in sys.path: sys.path.insert(0, str(APP_ROOT))
@@ -45,31 +46,54 @@ class ArtForgeApp:
         self._load_loras()
 
     def _load_presets(self):
-        """动态扫描 presets 目录"""
+        """动态扫描 presets 目录 (兼容新格式)"""
         print(f"🔍 正在扫描预设目录: {PRESETS_DIR}")
-        if not PRESETS_DIR.exists(): 
+        if not PRESETS_DIR.exists():
             print(f"❌ 预设目录不存在: {PRESETS_DIR}")
             return
+
+        import importlib.util
+        
+        self.presets_map.clear()
+        self.categories.clear()
+
+        # 遍历分类文件夹 (如 cat, bird, flower...)
+        for sub in sorted(PRESETS_DIR.iterdir()):
+            if not sub.is_dir() or sub.name.startswith('_'):
+                continue
             
-        for category_dir in PRESETS_DIR.iterdir():
-            if category_dir.is_dir() and not category_dir.name.startswith('_'):
-                presets = []
-                for py_file in category_dir.glob("*.py"):
-                    if py_file.name == "__init__.py": continue
-                    try:
-                        spec = importlib.util.spec_from_file_location(py_file.stem, py_file)
-                        mod = importlib.util.module_from_spec(spec)
-                        spec.loader.exec_module(mod)
-                        if hasattr(mod, "PRESET") and isinstance(mod.PRESET, dict):
-                            presets.append(mod.PRESET)
-                    except: pass
-                if presets:
-                    self.presets_map[category_dir.name] = presets
+            category_name = sub.name
+            preset_list = []
+            
+            # 遍历文件夹下的 .py 预设文件
+            for py_file in sub.glob("*.py"):
+                if py_file.name.startswith('_') or py_file.name == '__init__.py':
+                    continue
+                try:
+                    # 动态加载 .py 文件
+                    spec = importlib.util.spec_from_file_location(f"preset_{py_file.stem}", py_file)
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
                     
-        self.categories = sorted(self.presets_map.keys())
+                    preset_data = getattr(mod, "PRESET", None)
+                    
+                    if isinstance(preset_data, dict):
+                        # 确保字典里有 'name' 字段，UI 下拉框依赖它
+                        if "name" not in preset_data:
+                            preset_data["name"] = py_file.stem
+                        
+                        preset_list.append(preset_data)
+                except Exception as e:
+                    print(f"⚠️ 加载预设失败 {py_file.name}: {e}")
+            
+            # 只有当该分类下有有效预设时，才加入地图
+            if preset_list:
+                self.presets_map[category_name] = preset_list
+                self.categories.append(category_name)
+
         total_presets = sum(len(v) for v in self.presets_map.values())
         print(f"✅ 成功加载 {len(self.categories)} 个主题分类，共 {total_presets} 个预设")
-
+        
     def _load_loras(self):
         """扫描本地 LoRA 目录"""
         if not FORGE_CORE_AVAILABLE: return
