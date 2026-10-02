@@ -1,6 +1,7 @@
 # gui/app.py
 import os
 import sys
+import json
 import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -25,15 +26,109 @@ except ImportError as e:
     print(f"❌ 无法导入 ForgeCore: {e}")
     sys.exit(1)
 
+# ==================== 增强版提示词模板管理器 ====================
+class TemplateManager:
+    """
+    多模式 JSON 解析器：自动适配各种 SD 提示词 JSON 结构
+    兼容模式：
+      A. 列表式: [{"name": "x", "prompt": "..."}]
+      B. 对象式: {"cat": {"prompt": "...", "negative": "..."}}
+      C. 键值对: {"cat": "a cute cat", "dog": "a dog"}
+      D. WebUI式: {"text": "...", "negative_text": "..."}
+      E. 嵌套式: {"category": {"item": {"prompt": "..."}}}
+    """
+    def __init__(self, project_root: Path):
+        self.template_dir = project_root / "shared_assets" / "templates" / "sd_gui"
+        self.categories = {}
+        self._load_all()
+
+    def _load_all(self):
+        if not self.template_dir.exists():
+            print(f"⚠️ 模板目录不存在：{self.template_dir}")
+            return
+        
+        # 1. 加载 prompts/ 下的分类
+        prompts_dir = self.template_dir / "prompts"
+        if prompts_dir.exists():
+            for json_file in sorted(prompts_dir.glob("*.json")):
+                self._load_and_parse(json_file)
+                
+        # 2. 加载根目录的配置 JSON
+        for json_file in sorted(self.template_dir.glob("*.json")):
+            if json_file.name in ["persons.json", "scenes.json", "relationships.json"]:
+                self._load_and_parse(json_file, prefix="[配置] ")
+        
+        print(f"✅ 已加载 {len(self.categories)} 个提示词模板分类")
+
+    def _load_and_parse(self, filepath: Path, prefix: str = ""):
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # 核心：使用多模式探测器解析数据
+            items = self._normalize_items(data)
+            
+            if items:
+                category_name = prefix + filepath.stem
+                # 如果分类名重复，追加数字
+                base_name = category_name
+                counter = 1
+                while category_name in self.categories:
+                    category_name = f"{base_name}_{counter}"
+                    counter += 1
+                self.categories[category_name] = items
+        except Exception as e:
+            print(f"⚠️ 加载模板失败 {filepath.name}: {e}")
+
+    def _normalize_items(self, data, parent_key="") -> list:
+        """将各种格式的 JSON 统一转换为 [{"name": "...", "prompt": "...", "negative": "..."}]"""
+        items = []
+        
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict):
+                    name = item.get("name") or item.get("title") or item.get("id") or f"Item_{len(items)+1}"
+                    prompt = item.get("prompt") or item.get("positive") or item.get("text") or ""
+                    negative = item.get("negative") or item.get("negative_prompt") or item.get("negative_text") or ""
+                    items.append({"name": str(name), "prompt": str(prompt), "negative": str(negative)})
+                    
+        elif isinstance(data, dict):
+            for k, v in data.items():
+                if isinstance(v, dict):
+                    # 检查是否是包含 prompt 的对象 (模式 B)
+                    if any(key in v for key in ["prompt", "positive", "text", "negative"]):
+                        name = v.get("name") or v.get("title") or k
+                        prompt = v.get("prompt") or v.get("positive") or v.get("text") or ""
+                        negative = v.get("negative") or v.get("negative_prompt") or ""
+                        items.append({"name": str(name), "prompt": str(prompt), "negative": str(negative)})
+                    else:
+                        # 嵌套分类 (模式 E)，递归解析并将父键作为前缀
+                        sub_items = self._normalize_items(v, parent_key=k)
+                        # 给子项名字加上父分类前缀，避免混淆
+                        for sub in sub_items:
+                            sub["name"] = f"{k} - {sub['name']}"
+                        items.extend(sub_items)
+                        
+                elif isinstance(v, str):
+                    # 纯键值对 (模式 C)
+                    items.append({"name": str(k), "prompt": str(v), "negative": ""})
+                    
+        return items
+
+# ==================== 主应用类 ====================
 class SDGuiApp:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("SD GUI (ForgeCore Thin Shell)")
         self.root.geometry("1100x750")
         
+        # 初始化数据
         self.presets = self._scan_presets()
         self.local_models = self._scan_models()
         self.api_providers = ["freeapi", "pollinations", "agnes", "siliconflow", "tongyi", "hunyuan"]
+        
+        # 初始化增强版模板管理器
+        self.template_manager = TemplateManager(PROJECT_ROOT)
         
         self._build_ui()
         self._update_engine_visibility()
@@ -41,8 +136,7 @@ class SDGuiApp:
     def _scan_presets(self):
         presets = []
         presets_base = PROJECT_ROOT / "shared_assets" / "presets_by_app"
-        if not presets_base.exists():
-            return presets
+        if not presets_base.exists(): return presets
         for app_dir in sorted(presets_base.iterdir()):
             if not app_dir.is_dir() or app_dir.name.startswith('_'): continue
             for theme_dir in sorted(app_dir.iterdir()):
@@ -58,10 +152,8 @@ class SDGuiApp:
         try:
             sd15 = ModelRegistry.scan_checkpoints("sd15")
             sdxl = ModelRegistry.scan_checkpoints("sdxl")
-            for m in sd15:
-                models.append({"name": m["name"], "path": m["absolute_path"], "type": "sd15"})
-            for m in sdxl:
-                models.append({"name": m["name"], "path": m["absolute_path"], "type": "sdxl"})
+            for m in sd15: models.append({"name": m["name"], "path": m["absolute_path"], "type": "sd15"})
+            for m in sdxl: models.append({"name": m["name"], "path": m["absolute_path"], "type": "sdxl"})
         except Exception as e:
             print(f"⚠️ 扫描模型失败: {e}")
         return models
@@ -76,6 +168,8 @@ class SDGuiApp:
         right_frame = ttk.Frame(main_paned)
         main_paned.add(right_frame, weight=2)
 
+        # --- 左侧 UI ---
+        # 1. 引擎配置
         eng_frame = ttk.LabelFrame(left_frame, text="🔌 引擎配置 (Local / API)")
         eng_frame.pack(fill=tk.X, pady=5)
         
@@ -88,23 +182,44 @@ class SDGuiApp:
         ttk.Label(self.api_frame, text="Provider:").pack(side=tk.LEFT)
         self.api_provider_cb = ttk.Combobox(self.api_frame, values=self.api_providers, state="readonly", width=20)
         self.api_provider_cb.pack(side=tk.LEFT, padx=5)
-        self.api_provider_cb.set("freeapi") # 默认选免费引擎
+        self.api_provider_cb.set("freeapi")
 
         self.local_frame = ttk.Frame(eng_frame)
         self.local_frame.pack(fill=tk.X, padx=5, pady=2)
         ttk.Label(self.local_frame, text="Model:").pack(side=tk.LEFT)
         self.local_model_cb = ttk.Combobox(self.local_frame, values=[m["name"] for m in self.local_models], state="readonly", width=30)
         self.local_model_cb.pack(side=tk.LEFT, padx=5)
-        if self.local_models:
-            self.local_model_cb.set(self.local_models[0]["name"])
+        if self.local_models: self.local_model_cb.set(self.local_models[0]["name"])
 
-        preset_frame = ttk.LabelFrame(left_frame, text="🎨 预设 (来自 shared_assets)")
+        # 2. Python 预设
+        preset_frame = ttk.LabelFrame(left_frame, text=" 预设 (来自 shared_assets)")
         preset_frame.pack(fill=tk.X, pady=5)
         self.preset_cb = ttk.Combobox(preset_frame, values=self.presets, state="readonly")
         self.preset_cb.pack(fill=tk.X, padx=5, pady=5)
         ttk.Button(preset_frame, text="⬇️ 加载预设到提示词", command=self._load_preset_to_prompt).pack(fill=tk.X, padx=5, pady=(0,5))
 
-        prompt_frame = ttk.LabelFrame(left_frame, text="📝 提示词")
+        # 3. JSON 模板 (增强版)
+        template_frame = ttk.LabelFrame(left_frame, text="📚 提示词模板 (JSON)")
+        template_frame.pack(fill=tk.X, pady=5)
+        
+        cat_frame = ttk.Frame(template_frame)
+        cat_frame.pack(fill=tk.X, padx=5, pady=2)
+        ttk.Label(cat_frame, text="分类:").pack(side=tk.LEFT)
+        self.template_cat_cb = ttk.Combobox(cat_frame, values=sorted(self.template_manager.categories.keys()), state="readonly", width=20)
+        self.template_cat_cb.pack(side=tk.LEFT, padx=5)
+        self.template_cat_cb.bind("<<ComboboxSelected>>", self._on_template_category_changed)
+        
+        item_frame = ttk.Frame(template_frame)
+        item_frame.pack(fill=tk.X, padx=5, pady=2)
+        ttk.Label(item_frame, text="项目:").pack(side=tk.LEFT)
+        self.template_item_cb = ttk.Combobox(item_frame, values=[], state="readonly", width=30)
+        self.template_item_cb.pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(template_frame, text="⬇️ 加载模板到提示词", command=self._load_json_template_to_prompt).pack(fill=tk.X, padx=5, pady=5)
+        self.template_items_cache = {}
+
+        # 4. 提示词
+        prompt_frame = ttk.LabelFrame(left_frame, text=" 提示词")
         prompt_frame.pack(fill=tk.BOTH, expand=True, pady=5)
         
         ttk.Label(prompt_frame, text="Positive:").pack(anchor=tk.W, padx=5)
@@ -116,6 +231,7 @@ class SDGuiApp:
         self.neg_text.pack(fill=tk.X, padx=5, pady=2)
         self.neg_text.insert("1.0", "worst quality, low quality, ugly, deformed, blurry, bad anatomy, watermark, text")
 
+        # 5. 参数
         param_frame = ttk.LabelFrame(left_frame, text="⚙️ 生成参数")
         param_frame.pack(fill=tk.X, pady=5)
         grid = ttk.Frame(param_frame)
@@ -141,14 +257,15 @@ class SDGuiApp:
         self.seed_var = tk.StringVar(value="-1")
         ttk.Entry(grid, textvariable=self.seed_var, width=15).grid(row=2, column=1, columnspan=3, sticky=tk.W, padx=5)
 
-        self.gen_btn = ttk.Button(left_frame, text="🚀 生成图片", command=self._start_generate)
+        # 6. 生成按钮
+        self.gen_btn = ttk.Button(left_frame, text=" 生成图片", command=self._start_generate)
         self.gen_btn.pack(fill=tk.X, pady=10)
 
         # --- 右侧 UI ---
         self.img_label = ttk.Label(right_frame, text="预览区", relief=tk.SUNKEN, anchor=tk.CENTER)
         self.img_label.pack(fill=tk.BOTH, expand=True, pady=5)
 
-        log_frame = ttk.LabelFrame(right_frame, text="📜 运行日志")
+        log_frame = ttk.LabelFrame(right_frame, text=" 运行日志")
         log_frame.pack(fill=tk.X, pady=5)
         self.log_text = tk.Text(log_frame, height=10, state=tk.DISABLED, wrap=tk.WORD, bg="#f4f4f4")
         self.log_text.pack(fill=tk.X, padx=5, pady=5)
@@ -160,6 +277,50 @@ class SDGuiApp:
         else:
             self.local_frame.pack(fill=tk.X, padx=5, pady=2)
             self.api_frame.pack_forget()
+
+    # ==================== 模板相关逻辑 ====================
+    def _on_template_category_changed(self, event=None):
+        """分类改变时，更新项目下拉框"""
+        category = self.template_cat_cb.get()
+        if not category: return
+        
+        items = self.template_manager.categories.get(category, [])
+        item_names = [item.get("name", f"Item_{i}") for i, item in enumerate(items)]
+        
+        self.template_items_cache[category] = items
+        self.template_item_cb.config(values=item_names)
+        if item_names:
+            self.template_item_cb.set(item_names[0])
+
+    def _load_json_template_to_prompt(self):
+        """加载选中的 JSON 模板到提示词框"""
+        category = self.template_cat_cb.get()
+        item_name = self.template_item_cb.get()
+        if not category or not item_name:
+            self._log("⚠️ 请选择模板分类和项目")
+            return
+        
+        items = self.template_items_cache.get(category, [])
+        target_item = next((item for item in items if item.get("name") == item_name), None)
+        
+        if target_item:
+            prompt = target_item.get("prompt", "")
+            negative = target_item.get("negative", "")
+            
+            if prompt:
+                current = self.prompt_text.get("1.0", tk.END).strip()
+                new_prompt = f"{current}, {prompt}" if current else prompt
+                self.prompt_text.delete("1.0", tk.END)
+                self.prompt_text.insert("1.0", new_prompt)
+                
+                if negative:
+                    self.neg_text.delete("1.0", tk.END)
+                    self.neg_text.insert("1.0", negative)
+                self._log(f"✅ 已加载 JSON 模板：{category}/{item_name}")
+            else:
+                self._log(f"❌ 模板内容为空：{category}/{item_name}")
+        else:
+            self._log(f"❌ 未找到模板项：{item_name}")
 
     def _load_preset_to_prompt(self):
         import importlib.util
@@ -196,7 +357,7 @@ class SDGuiApp:
 
     def _start_generate(self):
         self.gen_btn.config(state=tk.DISABLED)
-        self._log("🚀 任务已提交，正在后台生成...")
+        self._log(" 任务已提交，正在后台生成...")
         threading.Thread(target=self._run_generate, daemon=True).start()
 
     def _run_generate(self):
@@ -215,31 +376,23 @@ class SDGuiApp:
                 raise ValueError("提示词不能为空")
 
             img = None
-            
             if mode == "local":
                 model_name = self.local_model_cb.get()
                 model_info = next((m for m in self.local_models if m["name"] == model_name), None)
-                if not model_info:
-                    raise ValueError("未选择本地模型")
+                if not model_info: raise ValueError("未选择本地模型")
                 
                 self.root.after(0, self._log, f"💻 加载本地模型: {model_name} (首次可能需要30秒)...")
                 engine = DiffusersEngine(model_type=model_info["type"], device="CPU")
                 engine.load_model(model_info["path"])
                 
                 self.root.after(0, self._log, f"🎨 本地推理中 (steps={steps}, cfg={cfg})...")
-                img = engine.generate(
-                    prompt=prompt, negative_prompt=negative,
-                    width=w, height=h, steps=steps, cfg=cfg, seed=seed
-                )
+                img = engine.generate(prompt=prompt, negative_prompt=negative, width=w, height=h, steps=steps, cfg=cfg, seed=seed)
             else:
                 provider = self.api_provider_cb.get()
-                
-                # ⚠️ 前置校验：如果是 Agnes 且没 Key，直接报错
                 if provider == "agnes" and not os.getenv("AGNES_API_KEY"):
-                    raise ValueError("❌ 检测到使用 Agnes 但未配置 AGNES_API_KEY。请在 .env 文件中配置，或切换到 freeapi/pollinations。")
+                    raise ValueError("❌ 使用 Agnes 但未配置 AGNES_API_KEY。请在 .env 中配置，或切换到 freeapi。")
 
                 self.root.after(0, self._log, f"☁️ 调用 API: {provider}...")
-                
                 config = {
                     "AGNES_API_KEY": os.getenv("AGNES_API_KEY", ""),
                     "AGNES_BASE_URL": os.getenv("AGNES_BASE_URL", "https://apihub.agnes-ai.com/v1"),
@@ -250,19 +403,13 @@ class SDGuiApp:
                     "SILICONFLOW_MODEL": os.getenv("SILICONFLOW_MODEL", "FLUX.1-dev"),
                 }
                 engine = create_engine(provider, config=config)
-                
-                # API 引擎统一使用 generate_single
-                img = engine.generate_single(
-                    prompt=prompt, negative=negative,
-                    width=w, height=h, steps=steps, cfg=cfg, seed=seed
-                )
+                img = engine.generate_single(prompt=prompt, negative=negative, width=w, height=h, steps=steps, cfg=cfg, seed=seed)
 
             if img:
                 Paths.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 save_path = Paths.OUTPUT_DIR / f"sdgui_{timestamp}.png"
                 img.save(save_path)
-                
                 self.root.after(0, self._show_image, img)
                 self.root.after(0, self._log, f"✅ 生成成功！保存至: {save_path}")
             else:
