@@ -1,491 +1,286 @@
 # gui/app.py
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""
-Stable Diffusion 桌面GUI版 - 精简版
-"""
-
-import sys
 import os
+import sys
 import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
+from pathlib import Path
+from datetime import datetime
+from PIL import Image, ImageTk
 
-from utils.logger import get_logger
+# 确保路径正确
+APP_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = APP_ROOT.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-logger = get_logger(__name__)
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# 导入 ForgeCore 基座
+try:
+    from forgecore.config.paths import Paths
+    from forgecore.config.registry import ModelRegistry
+    from forgecore.config.settings import settings
+    from forgecore.engines import create_engine
+    from forgecore.engines.local_engine import DiffusersEngine
+except ImportError as e:
+    print(f"❌ 无法导入 ForgeCore: {e}")
+    sys.exit(1)
 
-from config.app_config import app_config
-from gui.model_manager import ModelManager, ModelType
-from gui.model_loader import scan_checkpoints, scan_loras, scan_vaes, get_optimization_info
-from gui.ui_builder import UIBuilder
-from gui.lora_handler import LoraHandler
-from gui.vae_handler import VaeHandler
-from gui.reloader import Reloader
-from gui.components.memory_monitor import MemoryMonitor, force_memory_cleanup
-from gui.components.progress_bar import ProgressBar
-from gui.components.image_preview import ImagePreview
-from gui.components.params_panel import ParamsPanel
-from gui.components.batch_panel import BatchPanel
-
-
-class SDApp:
-    """主应用程序 - 精简版"""
-    
+class SDGuiApp:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Stable Diffusion 桌面版 - v8")
+        self.root.title("SD GUI (ForgeCore Thin Shell)")
+        self.root.geometry("1100x750")
         
-        ui_config = app_config.ui
-        self.root.geometry(f"{ui_config.window_width}x{ui_config.window_height}")
+        self.presets = self._scan_presets()
+        self.local_models = self._scan_models()
+        self.api_providers = ["freeapi", "pollinations", "agnes", "siliconflow", "tongyi", "hunyuan"]
         
-        try:
-            self.root.iconbitmap('icon.ico')
-        except:
-            pass
+        self._build_ui()
+        self._update_engine_visibility()
         
-        # ===== 初始化组件 =====
-        self.memory_monitor = MemoryMonitor(self.root, ui_config.memory_update_interval)
-        self.progress_bar = ProgressBar(self.root)
-        self.image_preview = ImagePreview(self.root)
-        self.params_panel = ParamsPanel()
-        
-        # ===== 初始化管理器 =====
-        self.model_manager = ModelManager(self)
-        self.lora_handler = LoraHandler(self)
-        self.vae_handler = VaeHandler(self)
-        self.reloader = Reloader(self)
-        self.ui_builder = UIBuilder(self)
-        
-        # ===== 状态变量 =====
-        self.status_var = tk.StringVar(value="就绪")
-        
-        # ===== 模型数据 =====
-        self.checkpoints = []
-        self.checkpoint_paths = {}
-        self.lora_files = []
-        self.lora_paths = {}
-        self.lora_types = {}
-        self.vae_files = []
-        self.vae_paths = {}
-        
-        # ===== 构建 UI =====
-        self._setup_ui()
-        
-        # ===== 启动监控 =====
-        if ui_config.show_memory_monitor:
-            self.memory_monitor.start_monitoring()
-        
-        # ===== 自动加载 =====
-        if app_config.model.auto_load_first:
-            self.root.after(100, self._auto_load_model)
-    
-    def _setup_ui(self):
-        """设置 UI"""
-        self.scrollable_frame = self.ui_builder.build_scrollable_frame()
-        main_frame = self.scrollable_frame
-        
-        # 构建各组件
-        self.ui_builder.build_status_bar(main_frame)
-        self.ui_builder.build_model_selector(main_frame)
-        self.ui_builder.build_lora_selector(main_frame)
-        self.ui_builder.build_vae_selector(main_frame)
-        
-        # 优化信息
-        opt_info = get_optimization_info()
-        ttk.Label(main_frame, text=opt_info, foreground="purple", font=("", 8)).pack(anchor=tk.W, padx=5)
-        
-        # 参数面板
-        self.ui_builder.build_params_panel(main_frame)
-        
-        # NSFW 面板
-        self.ui_builder.build_nsfw_panel(main_frame)
-        
-        # 标签页
-        self.notebook = self.ui_builder.build_tabs(main_frame)
-        
-        # 进度条和预览
-        self.ui_builder.build_progress_and_preview(main_frame)
-        
-        # 扫描模型
-        self.checkpoints, self.checkpoint_paths = scan_checkpoints()
-        self.model_combo['values'] = self.checkpoints
-        if self.checkpoints:
-            self.model_var.set(self.checkpoints[0])
-        
-        # 扫描 LoRA
-        self.lora_files, self.lora_paths, self.lora_types = scan_loras()
-        self.lora_combo['values'] = self.lora_files
-        if self.lora_files:
-            self.lora_var.set("")
-            self.lora_handler._update_lora_status()
-        
-        # 扫描 VAE
-        self.vae_files, self.vae_paths = scan_vaes()
-        self.vae_combo['values'] = self.vae_files
-        if self.vae_files:
-            self.vae_var.set("")
-        
-        self._update_model_ui()
-    
-    # ==================== 模型管理 ====================
-    
-    def _auto_load_model(self):
-        """自动加载模型"""
-        if self.checkpoints:
-            first_model = self.checkpoints[0]
-            self.model_var.set(first_model)
-            self.update_status(f"🔄 自动加载: {first_model[:40]}...")
-            self._load_sd_model()
-        else:
-            self.update_status("⚠️ 未找到模型文件，请检查模型目录")
-    
-    def _load_sd_model(self):
-        """加载 SD 模型"""
-        if self.model_manager.is_loading:
-            return
-        
-        model_name = self.model_var.get()
-        if not model_name or model_name not in self.model_combo['values']:
-            self.update_status("❌ 请选择有效的模型")
-            return
-        
-        model_path = self._get_model_path(model_name)
-        if not model_path:
-            self.update_status("❌ 找不到模型文件")
-            return
-        
-        lora_display = self.lora_var.get()
-        lora_path = None
-        lora_weight = 1.0
-        if lora_display and lora_display in self.lora_paths:
-            lora_path = self.lora_paths[lora_display]
-            lora_weight = self.lora_weight_var.get()
-            logger.info(f"🔗 将加载 LoRA: {lora_display} (权重: {lora_weight})")
-        
-        self.update_status(f"📦 加载 SD 模型...")
-        self.load_btn.config(state=tk.DISABLED)
-        
-        def load_thread():
-            def progress_cb(value, msg):
-                self.root.after(0, lambda: self.update_progress(value, msg))
-            
-            success = self.model_manager.load_sd(model_path, model_name, progress_cb, lora_path, lora_weight)
-            self.root.after(0, lambda: self._on_load_sd_complete(success))
-        
-        threading.Thread(target=load_thread, daemon=True).start()
-    
-    def _on_load_sd_complete(self, success: bool):
-        """SD 模型加载完成"""
-        self.load_btn.config(state=tk.NORMAL)
-        self._update_model_ui()
-        
-        if success:
-            model_type = self.model_manager.get_sd_model_type()
-            self.update_status(f"✅ SD 模型加载完成 ({model_type.upper()})")
-            self.update_progress(1.0, "✅ SD 模型就绪")
-            self.lora_handler._update_lora_list()
-            
-            lora_status = self.model_manager.get_lora_status()
-            if lora_status["loaded"]:
-                lora_name = os.path.basename(lora_status["path"])
-                self.update_status(f"✅ SD 模型加载完成 | 🔗 LoRA: {lora_name}")
-            
-            self.lora_handler._update_lora_status()
-        else:
-            self.update_status("❌ SD 模型加载失败")
-            messagebox.showerror("错误", "SD 模型加载失败，请查看控制台输出")
-    
-    # ==================== LoRA 管理 ====================
-    
-    def _load_lora_from_ui(self):
-        """加载 LoRA"""
-        self.lora_handler.load_lora()
-    
-    def _unload_lora(self):
-        """卸载 LoRA"""
-        self.lora_handler.unload_lora()
-    
-    def _clear_lora(self):
-        """清除 LoRA"""
-        self.lora_handler.clear_lora()
-    
-    def _update_lora_list(self):
-        """更新 LoRA 列表"""
-        self.lora_handler._update_lora_list()
-    
-    def _refresh_lora_viewer(self):
-        """刷新 LoRA 信息查看器"""
-        self.lora_handler._refresh_lora_viewer()
-    
-    # ==================== VAE 管理 ====================
-    
-    def _load_vae(self):
-        """加载 VAE"""
-        self.vae_handler.load_vae()
-    
-    def _unload_vae(self):
-        """卸载 VAE"""
-        self.vae_handler.unload_vae()
-    
-    def _clear_vae(self):
-        """清除 VAE"""
-        self.vae_handler.clear_vae()
-    
-    # ==================== 模型切换 ====================
-    
-    def _switch_to_janus(self):
-        """切换到 Janus"""
-        if self.model_manager.is_loading:
-            return
-        
-        model_key = "1B"
-        if self.janus_tab and hasattr(self.janus_tab, '_get_model_key'):
-            model_key = self.janus_tab._get_model_key()
-        
-        self.update_status("🔄 正在切换到 Janus-Pro...")
-        
-        def load_thread():
-            def progress_cb(value, msg):
-                self.root.after(0, lambda: self.update_progress(value, msg))
-            
-            success = self.model_manager.load_janus(model_key, progress_cb)
-            self.root.after(0, lambda: self._on_switch_complete(success, "Janus"))
-        
-        threading.Thread(target=load_thread, daemon=True).start()
-    
-    def _switch_to_sd(self):
-        """切换到 SD"""
-        if self.model_manager.is_loading:
-            return
-        
-        model_name = self.model_var.get()
-        if not model_name or model_name not in self.model_combo['values']:
-            messagebox.showwarning("提示", "请选择有效的 SD 模型")
-            return
-        
-        model_path = self._get_model_path(model_name)
-        if not model_path:
-            messagebox.showwarning("提示", "找不到模型文件")
-            return
-        
-        self.update_status("🔄 正在切换到 SD...")
-        
-        def load_thread():
-            def progress_cb(value, msg):
-                self.root.after(0, lambda: self.update_progress(value, msg))
-            
-            success = self.model_manager.load_sd(model_path, model_name, progress_cb)
-            self.root.after(0, lambda: self._on_switch_complete(success, "SD"))
-        
-        threading.Thread(target=load_thread, daemon=True).start()
-    
-    def _on_switch_complete(self, success: bool, model_type: str):
-        """切换完成"""
-        if success:
-            self.update_status(f"✅ 已切换到 {model_type}")
-        else:
-            self.update_status(f"❌ 切换到 {model_type} 失败")
-            messagebox.showerror("错误", f"{model_type} 模型加载失败")
-        
-        self._update_model_ui()
-        self.update_progress(1.0, f"✅ {model_type} 模型就绪")
-        force_memory_cleanup()
-    
-    def _unload_current_model(self):
-        """卸载当前模型"""
-        if self.model_manager.is_loading:
-            return
-        
-        if messagebox.askyesno("确认", "确定要卸载当前模型吗？"):
-            self.model_manager.unload_all()
-            self._update_model_ui()
-            self.update_status("✅ 模型已卸载")
-            force_memory_cleanup()
-    
-    def _update_model_ui(self):
-        """更新模型 UI 状态"""
-        status = self.model_manager.get_status_text()
-        self.model_status_label.config(text=status)
-        
-        is_sd = self.model_manager.is_sd_loaded
-        is_janus = self.model_manager.is_janus_loaded
-        is_loading = self.model_manager.is_loading
-        
-        if is_loading:
-            self.switch_to_janus_btn.config(state=tk.DISABLED)
-            self.switch_to_sd_btn.config(state=tk.DISABLED)
-            self.load_btn.config(state=tk.DISABLED)
-        else:
-            self.switch_to_janus_btn.config(state=tk.NORMAL if is_sd and not is_janus else tk.DISABLED)
-            self.switch_to_sd_btn.config(state=tk.NORMAL if is_janus else tk.DISABLED)
-            self.load_btn.config(state=tk.NORMAL if not is_sd else tk.DISABLED)
-        
-        if self.janus_tab:
-            self.janus_tab.update_model_status()
-    
-    # ==================== 热重载 ====================
-    
-    def _reload_modules(self):
-        """热重载模块"""
-        self.reloader.reload_all()
+    def _scan_presets(self):
+        presets = []
+        presets_base = PROJECT_ROOT / "shared_assets" / "presets_by_app"
+        if not presets_base.exists():
+            return presets
+        for app_dir in sorted(presets_base.iterdir()):
+            if not app_dir.is_dir() or app_dir.name.startswith('_'): continue
+            for theme_dir in sorted(app_dir.iterdir()):
+                if not theme_dir.is_dir() or theme_dir.name.startswith('_'): continue
+                for py_file in sorted(theme_dir.glob("*.py")):
+                    if py_file.name.startswith('_') or py_file.name == '__init__.py': continue
+                    rel_id = f"{app_dir.name}/{theme_dir.name}/{py_file.stem}"
+                    presets.append(rel_id)
+        return presets
 
-    def _force_reload_modules(self):
-        """强制热重载模块（先清理资源）"""
-        if messagebox.askyesno(
-            "强制重载",
-            "💥 强制重载将执行以下操作：\n\n"
-            "1. 取消所有正在运行的任务\n"
-            "2. 清理 Pipeline 池\n"
-            "3. 清理图片缓存\n"
-            "4. 卸载当前模型\n"
-            "5. 释放内存\n"
-            "6. 重新加载所有模块\n\n"
-            "确定继续吗？"
-        ):
-            self.reloader.reload_all(force=True)
+    def _scan_models(self):
+        models = []
+        try:
+            sd15 = ModelRegistry.scan_checkpoints("sd15")
+            sdxl = ModelRegistry.scan_checkpoints("sdxl")
+            for m in sd15:
+                models.append({"name": m["name"], "path": m["absolute_path"], "type": "sd15"})
+            for m in sdxl:
+                models.append({"name": m["name"], "path": m["absolute_path"], "type": "sdxl"})
+        except Exception as e:
+            print(f"⚠️ 扫描模型失败: {e}")
+        return models
+
+    def _build_ui(self):
+        main_paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
+        main_paned.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        left_frame = ttk.Frame(main_paned, width=400)
+        main_paned.add(left_frame, weight=1)
+
+        right_frame = ttk.Frame(main_paned)
+        main_paned.add(right_frame, weight=2)
+
+        eng_frame = ttk.LabelFrame(left_frame, text="🔌 引擎配置 (Local / API)")
+        eng_frame.pack(fill=tk.X, pady=5)
         
-    # ==================== 工具方法 ====================
-    
-    def _get_model_path(self, display_name: str) -> str:
-        """获取模型路径"""
-        return self.checkpoint_paths.get(display_name)
-    
-    def _get_memory_usage(self):
-        """获取内存使用"""
-        import psutil
-        return psutil.Process().memory_info().rss / 1024 / 1024 / 1024
-    
-    def update_status(self, message: str):
-        """更新状态"""
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        def update():
-            self.status_var.set(message)
-            logger.info(f"[{timestamp}] [状态] {message}")
-        self.root.after(0, update)
-    
-    def update_progress(self, value: float, message: str = ""):
-        """更新进度"""
-        self.progress_bar.update(value, message)
-    
-    def add_to_preview(self, filepath: str, image):
-        """添加到预览"""
-        self.image_preview.add_image(filepath, image)
-    
-    def open_output_folder(self):
-        """打开输出文件夹"""
-        from config.app_config import app_config
-        output_dir = app_config.paths.get_resolved_output_dir()
+        self.engine_mode = tk.StringVar(value="api")
+        ttk.Radiobutton(eng_frame, text="☁️ API 引擎 (免配置/快速)", variable=self.engine_mode, value="api", command=self._update_engine_visibility).pack(anchor=tk.W, padx=5)
+        ttk.Radiobutton(eng_frame, text="💻 本地模型 (SD1.5/SDXL)", variable=self.engine_mode, value="local", command=self._update_engine_visibility).pack(anchor=tk.W, padx=5)
+
+        self.api_frame = ttk.Frame(eng_frame)
+        self.api_frame.pack(fill=tk.X, padx=5, pady=2)
+        ttk.Label(self.api_frame, text="Provider:").pack(side=tk.LEFT)
+        self.api_provider_cb = ttk.Combobox(self.api_frame, values=self.api_providers, state="readonly", width=20)
+        self.api_provider_cb.pack(side=tk.LEFT, padx=5)
+        self.api_provider_cb.set("freeapi") # 默认选免费引擎
+
+        self.local_frame = ttk.Frame(eng_frame)
+        self.local_frame.pack(fill=tk.X, padx=5, pady=2)
+        ttk.Label(self.local_frame, text="Model:").pack(side=tk.LEFT)
+        self.local_model_cb = ttk.Combobox(self.local_frame, values=[m["name"] for m in self.local_models], state="readonly", width=30)
+        self.local_model_cb.pack(side=tk.LEFT, padx=5)
+        if self.local_models:
+            self.local_model_cb.set(self.local_models[0]["name"])
+
+        preset_frame = ttk.LabelFrame(left_frame, text="🎨 预设 (来自 shared_assets)")
+        preset_frame.pack(fill=tk.X, pady=5)
+        self.preset_cb = ttk.Combobox(preset_frame, values=self.presets, state="readonly")
+        self.preset_cb.pack(fill=tk.X, padx=5, pady=5)
+        ttk.Button(preset_frame, text="⬇️ 加载预设到提示词", command=self._load_preset_to_prompt).pack(fill=tk.X, padx=5, pady=(0,5))
+
+        prompt_frame = ttk.LabelFrame(left_frame, text="📝 提示词")
+        prompt_frame.pack(fill=tk.BOTH, expand=True, pady=5)
         
-        if not os.path.exists(output_dir):
-            try:
-                os.makedirs(output_dir, exist_ok=True)
-            except Exception as e:
-                self.update_status(f"❌ 无法创建输出目录: {e}")
-                return
+        ttk.Label(prompt_frame, text="Positive:").pack(anchor=tk.W, padx=5)
+        self.prompt_text = tk.Text(prompt_frame, height=5, wrap=tk.WORD)
+        self.prompt_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=2)
+
+        ttk.Label(prompt_frame, text="Negative:").pack(anchor=tk.W, padx=5)
+        self.neg_text = tk.Text(prompt_frame, height=2, wrap=tk.WORD)
+        self.neg_text.pack(fill=tk.X, padx=5, pady=2)
+        self.neg_text.insert("1.0", "worst quality, low quality, ugly, deformed, blurry, bad anatomy, watermark, text")
+
+        param_frame = ttk.LabelFrame(left_frame, text="⚙️ 生成参数")
+        param_frame.pack(fill=tk.X, pady=5)
+        grid = ttk.Frame(param_frame)
+        grid.pack(fill=tk.X, padx=5, pady=5)
+        
+        ttk.Label(grid, text="Steps:").grid(row=0, column=0, sticky=tk.W)
+        self.steps_var = tk.IntVar(value=20)
+        ttk.Spinbox(grid, from_=1, to=100, textvariable=self.steps_var, width=5).grid(row=0, column=1, padx=5)
+        
+        ttk.Label(grid, text="CFG:").grid(row=0, column=2, sticky=tk.W)
+        self.cfg_var = tk.DoubleVar(value=7.5)
+        ttk.Spinbox(grid, from_=1.0, to=20.0, increment=0.5, textvariable=self.cfg_var, width=5).grid(row=0, column=3, padx=5)
+
+        ttk.Label(grid, text="Width:").grid(row=1, column=0, sticky=tk.W)
+        self.width_var = tk.IntVar(value=512)
+        ttk.Spinbox(grid, from_=256, to=1024, increment=64, textvariable=self.width_var, width=5).grid(row=1, column=1, padx=5)
+
+        ttk.Label(grid, text="Height:").grid(row=1, column=2, sticky=tk.W)
+        self.height_var = tk.IntVar(value=768)
+        ttk.Spinbox(grid, from_=256, to=1024, increment=64, textvariable=self.height_var, width=5).grid(row=1, column=3, padx=5)
+
+        ttk.Label(grid, text="Seed:").grid(row=2, column=0, sticky=tk.W)
+        self.seed_var = tk.StringVar(value="-1")
+        ttk.Entry(grid, textvariable=self.seed_var, width=15).grid(row=2, column=1, columnspan=3, sticky=tk.W, padx=5)
+
+        self.gen_btn = ttk.Button(left_frame, text="🚀 生成图片", command=self._start_generate)
+        self.gen_btn.pack(fill=tk.X, pady=10)
+
+        # --- 右侧 UI ---
+        self.img_label = ttk.Label(right_frame, text="预览区", relief=tk.SUNKEN, anchor=tk.CENTER)
+        self.img_label.pack(fill=tk.BOTH, expand=True, pady=5)
+
+        log_frame = ttk.LabelFrame(right_frame, text="📜 运行日志")
+        log_frame.pack(fill=tk.X, pady=5)
+        self.log_text = tk.Text(log_frame, height=10, state=tk.DISABLED, wrap=tk.WORD, bg="#f4f4f4")
+        self.log_text.pack(fill=tk.X, padx=5, pady=5)
+
+    def _update_engine_visibility(self):
+        if self.engine_mode.get() == "api":
+            self.api_frame.pack(fill=tk.X, padx=5, pady=2)
+            self.local_frame.pack_forget()
+        else:
+            self.local_frame.pack(fill=tk.X, padx=5, pady=2)
+            self.api_frame.pack_forget()
+
+    def _load_preset_to_prompt(self):
+        import importlib.util
+        preset_id = self.preset_cb.get()
+        if not preset_id: return
+        parts = preset_id.split('/')
+        if len(parts) != 3: return
+            
+        app_dir, theme_dir, name = parts
+        py_file = PROJECT_ROOT / "shared_assets" / "presets_by_app" / app_dir / theme_dir / f"{name}.py"
         
         try:
-            if sys.platform == 'win32':
-                os.startfile(output_dir)
+            spec = importlib.util.spec_from_file_location(name, py_file)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            preset_data = getattr(mod, "PRESET", {})
+            layers = preset_data.get("layers", {})
+            prompt_parts = []
+            for key in ["subject", "scene", "style", "lighting", "view", "quality"]:
+                if key in layers and isinstance(layers[key], list):
+                    prompt_parts.extend(layers[key])
+            prompt = ", ".join(prompt_parts)
+            self.prompt_text.delete("1.0", tk.END)
+            self.prompt_text.insert("1.0", prompt)
+            self._log(f"✅ 已加载预设: {preset_id}")
+        except Exception as e:
+            self._log(f"❌ 加载预设失败: {e}")
+
+    def _log(self, msg):
+        self.log_text.config(state=tk.NORMAL)
+        self.log_text.insert(tk.END, msg + "\n")
+        self.log_text.see(tk.END)
+        self.log_text.config(state=tk.DISABLED)
+
+    def _start_generate(self):
+        self.gen_btn.config(state=tk.DISABLED)
+        self._log("🚀 任务已提交，正在后台生成...")
+        threading.Thread(target=self._run_generate, daemon=True).start()
+
+    def _run_generate(self):
+        try:
+            mode = self.engine_mode.get()
+            prompt = self.prompt_text.get("1.0", tk.END).strip()
+            negative = self.neg_text.get("1.0", tk.END).strip()
+            steps = self.steps_var.get()
+            cfg = self.cfg_var.get()
+            w = self.width_var.get()
+            h = self.height_var.get()
+            seed_str = self.seed_var.get()
+            seed = int(seed_str) if seed_str.isdigit() else -1
+
+            if not prompt:
+                raise ValueError("提示词不能为空")
+
+            img = None
+            
+            if mode == "local":
+                model_name = self.local_model_cb.get()
+                model_info = next((m for m in self.local_models if m["name"] == model_name), None)
+                if not model_info:
+                    raise ValueError("未选择本地模型")
+                
+                self.root.after(0, self._log, f"💻 加载本地模型: {model_name} (首次可能需要30秒)...")
+                engine = DiffusersEngine(model_type=model_info["type"], device="CPU")
+                engine.load_model(model_info["path"])
+                
+                self.root.after(0, self._log, f"🎨 本地推理中 (steps={steps}, cfg={cfg})...")
+                img = engine.generate(
+                    prompt=prompt, negative_prompt=negative,
+                    width=w, height=h, steps=steps, cfg=cfg, seed=seed
+                )
             else:
-                os.system(f'open "{output_dir}"')
+                provider = self.api_provider_cb.get()
+                
+                # ⚠️ 前置校验：如果是 Agnes 且没 Key，直接报错
+                if provider == "agnes" and not os.getenv("AGNES_API_KEY"):
+                    raise ValueError("❌ 检测到使用 Agnes 但未配置 AGNES_API_KEY。请在 .env 文件中配置，或切换到 freeapi/pollinations。")
+
+                self.root.after(0, self._log, f"☁️ 调用 API: {provider}...")
+                
+                config = {
+                    "AGNES_API_KEY": os.getenv("AGNES_API_KEY", ""),
+                    "AGNES_BASE_URL": os.getenv("AGNES_BASE_URL", "https://apihub.agnes-ai.com/v1"),
+                    "AGNES_IMAGE_MODEL": os.getenv("AGNES_IMAGE_MODEL", "agnes-image-2.1-flash"),
+                    "FREEAPI_MODEL": os.getenv("FREEAPI_MODEL", "grok-imagine-image-lite"),
+                    "POLLINATIONS_MODEL": os.getenv("POLLINATIONS_MODEL", "flux"),
+                    "SILICONFLOW_API_KEY": os.getenv("SILICONFLOW_API_KEY", ""),
+                    "SILICONFLOW_MODEL": os.getenv("SILICONFLOW_MODEL", "FLUX.1-dev"),
+                }
+                engine = create_engine(provider, config=config)
+                
+                # API 引擎统一使用 generate_single
+                img = engine.generate_single(
+                    prompt=prompt, negative=negative,
+                    width=w, height=h, steps=steps, cfg=cfg, seed=seed
+                )
+
+            if img:
+                Paths.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                save_path = Paths.OUTPUT_DIR / f"sdgui_{timestamp}.png"
+                img.save(save_path)
+                
+                self.root.after(0, self._show_image, img)
+                self.root.after(0, self._log, f"✅ 生成成功！保存至: {save_path}")
+            else:
+                self.root.after(0, self._log, "❌ 引擎未返回图片")
+
         except Exception as e:
-            self.update_status(f"❌ 无法打开文件夹: {e}")
-    
+            import traceback
+            self.root.after(0, self._log, f"❌ 生成失败: {e}\n{traceback.format_exc()}")
+        finally:
+            self.root.after(0, lambda: self.gen_btn.config(state=tk.NORMAL))
+
+    def _show_image(self, pil_img):
+        max_w, max_h = 600, 600
+        ratio = min(max_w / pil_img.width, max_h / pil_img.height)
+        new_size = (int(pil_img.width * ratio), int(pil_img.height * ratio))
+        resized = pil_img.resize(new_size, Image.Resampling.LANCZOS)
+        self._tk_img = ImageTk.PhotoImage(resized)
+        self.img_label.config(image=self._tk_img, text="")
+
     def run(self):
-        """运行应用"""
         self.root.mainloop()
-
-    # gui/app.py
-
-    def _force_cleanup(self):
-        """强制清理内存 - 增强版"""
-        from gui.components.memory_monitor import get_memory_usage
-        import gc
-        
-        before = get_memory_usage()
-        self.update_status(f"🧹 开始清理内存 (当前: {before:.1f} GB)...")
-        
-        # 1. 清理 Pipeline 池
-        try:
-            from utils.pipeline_pool import pipeline_pool
-            status = pipeline_pool.get_status()
-            if status.get('active_count', 0) > 0:
-                logger.info(f"   🗑️ 清理 Pipeline 池 ({status['active_count']} 个实例)")
-                # 强制释放所有引用计数为 0 的 Pipeline
-                for key, data in list(pipeline_pool._pipelines.items()):
-                    if data.get('ref_count', 0) <= 0:
-                        pipe = data.get('pipe')
-                        if pipe is not None:
-                            del pipe
-                        del pipeline_pool._pipelines[key]
-        except Exception as e:
-            logger.debug(f"   ⚠️ Pipeline 池清理失败: {e}")
-        
-        # 2. 清理图片缓存
-        try:
-            from utils.image_cache import image_cache
-            cache_size = len(image_cache._cache)
-            if cache_size > 0:
-                logger.info(f"   🗑️ 清理图片缓存 ({cache_size} 张)")
-                image_cache.clear()
-        except Exception as e:
-            logger.debug(f"   ⚠️ 图片缓存清理失败: {e}")
-        
-        # 3. 垃圾回收
-        for _ in range(3):
-            gc.collect()
-        
-        # 4. CUDA 清理
-        try:
-            import torch
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                torch.cuda.synchronize()
-        except:
-            pass
-        
-        # 5. 最终回收
-        gc.collect()
-        
-        after = get_memory_usage()
-        freed = before - after
-        if freed < 0:
-            freed = 0
-        
-        self.update_status(f"✅ 内存清理完成，释放 {freed:.2f} GB，当前 {after:.1f} GB")
-        
-        # 如果内存仍然过高，提示用户
-        if after > 12:
-            self.update_status(f"⚠️ 内存仍较高 ({after:.1f} GB)，建议重启程序")
-
-def main():
-    """主入口"""
-    from utils.performance import start_timer, log_startup
-    start_timer()
-    
-    print("=" * 60)
-    logger.info(f"Stable Diffusion 桌面GUI版 - v8")
-    logger.info(f"输出目录: {app_config.paths.output_dir}")
-    print("=" * 60)
-    
-    try:
-        import torch
-        logger.info(f"PyTorch: {torch.__version__}")
-        logger.info(f"CUDA可用: {torch.cuda.is_available()}")
-    except:
-        logger.info(f"⚠️ PyTorch 未安装或导入失败")
-    
-    logger.info(f"\n🌍 通用生成器已集成")
-    logger.info(f"💡 模型互斥加载: SD ↔ Janus 自动切换")
-    print("=" * 60)
-    
-    app = SDApp()
-    log_startup("GUI 初始化完成")
-    app.run()
-
-
-if __name__ == "__main__":
-    main()
