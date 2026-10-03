@@ -1,9 +1,10 @@
 # apps/artforge/gui/unified_app.py
 """
-ArtForge Ultimate - 超级工作台 (最终修复版 - 修复 Agnes image_to_image 参数错误)
+ArtForge Ultimate - 超级工作台 (最终完整版 + 自动保存图片功能)
 1. 完整复用 app.py 的 ArtForgeApp 类 (预设/模型/后处理)
-2. 通用生图 Tab (修复 Agnes 图生图：移除不支持的 negative 参数)
+2. 通用生图 Tab (支持 Agnes API 图生图 / 本地 ControlNet 切换)
 3. 90 个技能的全局智能调度
+4. 🆕 全局自动保存图片功能 (统一保存到 output 目录)
 """
 import gradio as gr
 import sys
@@ -12,6 +13,7 @@ import json
 import logging
 from pathlib import Path
 from PIL import Image
+from datetime import datetime
 
 # ==========================================
 # 1. 路径注入 & 环境初始化
@@ -51,7 +53,42 @@ except ImportError as e:
 skill_manager.scan()
 
 # ==========================================
-# 3. Tab 1: 东方艺术 (100% 复用 app.py)
+# 3. 核心辅助函数：自动保存图片
+# ==========================================
+def _save_image_automatically(image: Image.Image, prefix: str = "artforge") -> str:
+    """
+    自动保存图片到 output 目录。
+    优先使用 forgecore 的 Paths.OUTPUT_DIR，否则回退到 PROJECT_ROOT/output。
+    """
+    if image is None:
+        return ""
+    try:
+        # 尝试获取 forgecore 的输出目录
+        save_dir = None
+        try:
+            from forgecore.config.paths import Paths
+            save_dir = Paths.OUTPUT_DIR
+        except Exception:
+            save_dir = PROJECT_ROOT / "output"
+            
+        save_dir.mkdir(parents=True, exist_ok=True)
+        
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        save_path = save_dir / f"{prefix}_{timestamp}.png"
+        
+        # 确保图片是 RGB/RGBA 模式以便保存
+        if image.mode not in ('RGB', 'RGBA'):
+            image = image.convert('RGB')
+            
+        image.save(save_path)
+        return str(save_path)
+    except Exception as e:
+        print(f"⚠️ 自动保存图片失败: {e}")
+        return ""
+
+
+# ==========================================
+# 4. Tab 1: 东方艺术 (100% 复用 app.py)
 # ==========================================
 def build_art_forge_tab(app_instance: ArtForgeApp):
     with gr.Tab("🎨 东方艺术"):
@@ -62,7 +99,7 @@ def build_art_forge_tab(app_instance: ArtForgeApp):
 
 
 # ==========================================
-# 4. Tab 2: 通用生图 & ControlNet (完整功能 + 修复 Agnes 调用)
+# 5. Tab 2: 通用生图 & ControlNet (完整功能 + 自动保存)
 # ==========================================
 def build_general_gen_tab():
     with gr.Tab("🧍 通用生图 & ControlNet"):
@@ -95,7 +132,7 @@ def build_general_gen_tab():
                 
                 # 4. ControlNet / 图生图 控制参数
                 with gr.Group():
-                    gr.Markdown("#### 🎛️ 控制参数")
+                    gr.Markdown("#### ️ 控制参数")
                     cn_type_dd = gr.Dropdown(
                         choices=["openpose", "canny", "depth", "lineart", "hed", "无 (纯图生图)"],
                         label="ControlNet 类型 / 参考方式", 
@@ -103,7 +140,7 @@ def build_general_gen_tab():
                     )
                     cn_strength = gr.Slider(0.1, 1.0, value=0.6, label="重绘幅度 / ControlNet 强度 (0.1=微调, 1.0=大改)")
                     
-                gen_btn = gr.Button("🚀 开始图生图 / ControlNet 生成", variant="primary", size="lg")
+                gen_btn = gr.Button(" 开始图生图 / ControlNet 生成", variant="primary", size="lg")
                 
             with gr.Column(scale=1):
                 gen_out = gr.Image(label="生成结果", type="pil", height=400)
@@ -111,12 +148,14 @@ def build_general_gen_tab():
 
         # 生成逻辑
         def run_img2img(ref_img, mode, model_name, prompt, negative, cn_type, strength):
-            logs = ["🚀 启动图生图 / ControlNet 流水线..."]
+            logs = [" 启动图生图 / ControlNet 流水线..."]
             
             if ref_img is None:
                 return None, "❌ 必须上传参考图！图生图/ControlNet 需要底图来锁定特征。"
 
             try:
+                final_image = None
+                
                 # ==========================================
                 # 路径 A: Agnes API 图生图 (默认)
                 # ==========================================
@@ -128,35 +167,22 @@ def build_general_gen_tab():
                     config = load_env_config()
                     engine = create_engine("agnes", config)
                     
-                    # ✅ 修复：Agnes 的 image_to_image 不支持 negative 参数，已移除！
                     try:
                         if hasattr(engine, 'image_to_image'):
                             logs.append("🔄 调用 engine.image_to_image...")
-                            image = engine.image_to_image(
+                            final_image = engine.image_to_image(
                                 prompt=prompt, 
-                                image=ref_img,      # 传入参考图
+                                image=ref_img,
                                 strength=strength,
                                 width=768, height=1024
                             )
                         else:
-                            logs.append("️ 引擎无 image_to_image，降级为文生图 (忽略参考图)")
-                            image = engine.generate_single(
-                                prompt=prompt, 
-                                negative=negative,  
-                                width=768, height=1024
-                            )
-                    except TypeError as e:
-                        # 如果 image_to_image 签名不同（例如需要 images 列表），回退尝试
-                        logs.append(f"⚠️ image_to_image 签名不兼容: {e}，尝试 images 参数")
-                        image = engine.image_to_image(
-                            prompt=prompt, 
-                            images=[ref_img],
-                            strength=strength,
-                            width=768, height=1024
-                        )
+                            logs.append("️ 引擎无 image_to_image，降级为文生图")
+                            final_image = engine.generate_single(prompt=prompt, width=768, height=1024)
+                    except TypeError:
+                        final_image = engine.image_to_image(prompt=prompt, images=[ref_img], strength=strength)
                         
                     logs.append("✅ Agnes API 图生图完成")
-                    return image, "\n".join(logs)
 
                 # ==========================================
                 # 路径 B: 本地模型 ControlNet
@@ -165,61 +191,52 @@ def build_general_gen_tab():
                     if not model_name:
                         return None, "❌ 选择本地引擎时，必须选择本地模型。"
                     
-                    # 获取模型绝对路径
                     all_models = ModelRegistry.scan_checkpoints("sd15")
                     model_obj = next((m for m in all_models if m["name"] == model_name), None)
                     if not model_obj:
                         return None, "❌ 找不到模型路径"
                     model_path = model_obj["absolute_path"]
-                    logs.append(f"📂 本地模型: {model_name}")
+                    logs.append(f" 本地模型: {model_name}")
 
-                    # 调用 ControlNet Skill
                     if cn_type and cn_type != "无 (纯图生图)":
                         logs.append(f"🎛️ 调用本地 ControlNet Pipeline (类型: {cn_type}, 强度: {strength})")
                         res = skill_manager.run(
-                            "controlnet",
-                            action="generate",
-                            image=ref_img,
-                            prompt=prompt,
-                            negative_prompt=negative,
-                            model_path=model_path,
-                            controlnet_type=cn_type,
-                            controlnet_conditioning_scale=strength,
-                            num_inference_steps=20,
-                            guidance_scale=7.5
+                            "controlnet", action="generate", image=ref_img, prompt=prompt,
+                            negative_prompt=negative, model_path=model_path,
+                            controlnet_type=cn_type, controlnet_conditioning_scale=strength
                         )
                     else:
-                        # 纯本地图生图
-                        logs.append(f"️ 调用本地图生图 (重绘幅度: {strength})")
+                        logs.append(f"🖼️ 调用本地图生图 (重绘幅度: {strength})")
                         res = skill_manager.run(
-                            "controlnet", 
-                            action="generate",
-                            image=ref_img,
-                            prompt=prompt,
-                            negative_prompt=negative,
-                            model_path=model_path,
-                            controlnet_type="canny", 
-                            controlnet_conditioning_scale=0.0, 
-                            strength=strength,
-                            num_inference_steps=20
+                            "controlnet", action="generate", image=ref_img, prompt=prompt,
+                            negative_prompt=negative, model_path=model_path,
+                            controlnet_type="canny", controlnet_conditioning_scale=0.0, strength=strength
                         )
 
                     if res.get("status") == "success":
                         out_path = res["result"].get("output_path")
                         if out_path and Path(out_path).exists():
-                            logs.append(f"✅ 本地生成成功: {Path(out_path).name}")
-                            return Image.open(out_path), "\n".join(logs)
+                            final_image = Image.open(out_path)
+                            logs.append(f"✅ 本地生成成功")
                         elif "image" in res["result"]:
-                            return res["result"]["image"], "\n".join(logs)
-                        else:
-                            logs.append("⚠️ 生成成功但未找到输出路径")
-                            return None, "\n".join(logs)
+                            final_image = res["result"]["image"]
                     else:
                         logs.append(f"❌ 本地生成失败: {res.get('error')}")
-                        return None, "\n".join(logs)
+
+                # ==========================================
+                # 🆕 核心：自动保存图片
+                # ==========================================
+                if final_image is not None:
+                    save_path = _save_image_automatically(final_image, prefix="img2img")
+                    if save_path:
+                        logs.append(f"💾 图片已自动保存: {save_path}")
+                    return final_image, "\n".join(logs)
+                else:
+                    return None, "\n".join(logs) + "\n❌ 未生成有效图片"
 
             except Exception as e:
-                return None, f"❌ 执行出错: {str(e)}"
+                import traceback
+                return None, f"❌ 执行出错: {str(e)}\n{traceback.format_exc()}"
 
         gen_btn.click(
             fn=run_img2img,
@@ -229,11 +246,11 @@ def build_general_gen_tab():
 
 
 # ==========================================
-# 5. Tab 3: 技能中心 (90 Skills 动态调度)
+# 6. Tab 3: 技能中心 (90 Skills 动态调度)
 # ==========================================
 def build_skill_hub_tab():
     with gr.Tab("🛠️ 技能中心 (90 Skills)"):
-        gr.Markdown("### 🚀 ForgeCore 全局技能调度器")
+        gr.Markdown("###  ForgeCore 全局技能调度器")
         gr.Markdown("💡 **提示**：参数需填写合法的 JSON 格式。")
         
         skill_names = [s['name'] for s in skill_manager.list_skills()]
@@ -250,7 +267,7 @@ def build_skill_hub_tab():
                     value='{"query": "AI 绘画", "kind": "images", "limit": 5}',
                     lines=6
                 )
-                run_btn = gr.Button(" 执行技能", variant="primary", size="lg")
+                run_btn = gr.Button("🚀 执行技能", variant="primary", size="lg")
             with gr.Column(scale=1):
                 log_output = gr.Textbox(label="执行日志", lines=12, interactive=False)
                 result_output = gr.JSON(label="返回结果")
@@ -266,20 +283,20 @@ def build_skill_hub_tab():
                     logs.append(f"❌ 失败: {result.get('error')}")
                 return "\n".join(logs), result
             except Exception as e:
-                return f"❌ 错误: {e}", {}
+                return f" 错误: {e}", {}
 
         run_btn.click(fn=execute_skill, inputs=[skill_dd, params_input], outputs=[log_output, result_output])
 
 
 # ==========================================
-# 6. 构建主 GUI
+# 7. 构建主 GUI
 # ==========================================
 def build_unified_gui():
     app = ArtForgeApp() if ArtForgeApp else None
     
     with gr.Blocks(title="ArtForge Ultimate", theme=gr.themes.Soft()) as demo:
         with gr.Row():
-            gr.Markdown("# 🎎 ArtForge Ultimate")
+            gr.Markdown("#  ArtForge Ultimate")
             gr.Markdown(f"**状态**: 🟢 ForgeCore 就绪 | **技能**: {len(skill_manager.list_skills())} 个")
             
         with gr.Tabs():

@@ -122,6 +122,9 @@ class ArtForgeApp:
             with gr.Tabs():
                 with gr.Tab("🎨 生图"):
                     self._build_generation_tab()
+                with gr.Tab("图生图（需要参考图）"):                    
+                    #  在这里添加图生图 Tab
+                    self._build_img2img_tab()                     
                 with gr.Tab("🖼️ 鉴赏"):
                     gr.Markdown("### 图片鉴赏\n(功能开发中... 将接入 BLIP/LLM 进行自动鉴赏)")
                 with gr.Tab("📐 排版推送"):
@@ -298,6 +301,166 @@ class ArtForgeApp:
                 outputs=[output_image, output_info]  # 🔥 严格对应 2 个输出
             )
 
+    def _build_img2img_tab(self):
+        """构建图生图 & ControlNet Tab (集成到 app.py)"""
+        with gr.Tab("🖼️ 图生图 & ControlNet"):
+            gr.Markdown("### ️ 图生图 / ControlNet 工作台")
+            gr.Markdown("💡 **核心逻辑**：上传参考图锁定特征，通过提示词引导继续创作。默认使用 Agnes API 图生图，也支持本地 ControlNet 模型。")
+            
+            with gr.Row():
+                with gr.Column(scale=1):
+                    # 1. 核心：参考图上传
+                    self.i2i_ref_image = gr.Image(label="📎 上传参考图 (Control Source / 图生图底图)", type="pil", height=300)
+                    
+                    # 2. 引擎选择
+                    self.i2i_engine_mode = gr.Radio(
+                        choices=[("️ Agnes API (图生图)", "agnes"), ("💻 本地模型 (ControlNet)", "local")],
+                        value="agnes", 
+                        label="生成引擎"
+                    )
+                    
+                    # 本地模型选择 (复用 app.py 已有的模型扫描逻辑，如果有的话；这里新建一个确保可用)
+                    from forgecore.config.registry import ModelRegistry
+                    local_models = [m["name"] for m in ModelRegistry.scan_checkpoints("sd15")]
+                    self.i2i_local_model = gr.Dropdown(
+                        choices=local_models,
+                        label="本地模型 (SD1.5) - 仅本地引擎生效",
+                        value=local_models[0] if local_models else None
+                    )
+
+                    # 3. 提示词
+                    self.i2i_prompt = gr.Textbox(label="提示词 (Prompt - 描述你想要的变化)", value="masterpiece, best quality, detailed face", lines=2)
+                    self.i2i_neg = gr.Textbox(label="负面提示词 (仅本地模型生效)", value="worst quality, lowres, bad anatomy", lines=1)
+                    
+                    # 4. 控制参数
+                    with gr.Group():
+                        gr.Markdown("#### ️ 控制参数")
+                        self.i2i_cn_type = gr.Dropdown(
+                            choices=["openpose", "canny", "depth", "lineart", "hed", "无 (纯图生图)"],
+                            label="ControlNet 类型 / 参考方式", value="无 (纯图生图)"
+                        )
+                        self.i2i_strength = gr.Slider(0.1, 1.0, value=0.6, label="重绘幅度 / ControlNet 强度 (0.1=微调, 1.0=大改)")
+                        
+                    self.i2i_btn = gr.Button("🚀 开始图生图", variant="primary", size="lg")
+                    
+                with gr.Column(scale=1):
+                    self.i2i_out = gr.Image(label="生成结果", type="pil", height=400)
+                    self.i2i_log = gr.Textbox(label="生成日志", lines=10)
+
+            # 绑定事件
+            self.i2i_btn.click(
+                fn=self._run_img2img,
+                inputs=[self.i2i_ref_image, self.i2i_engine_mode, self.i2i_local_model, self.i2i_prompt, self.i2i_neg, self.i2i_cn_type, self.i2i_strength],
+                outputs=[self.i2i_out, self.i2i_log]
+            )
+
+    def _run_img2img(self, ref_img, mode, model_name, prompt, negative, cn_type, strength):
+        """执行图生图逻辑 (包含自动保存)"""
+        logs = ["🚀 启动图生图 / ControlNet 流水线..."]
+        
+        if ref_img is None:
+            return None, " 必须上传参考图！图生图/ControlNet 需要底图来锁定特征。"
+
+        try:
+            final_image = None
+            
+            # ==========================================
+            # 路径 A: Agnes API 图生图 (默认)
+            # ==========================================
+            if mode == "agnes":
+                logs.append(f"☁️ 使用 Agnes API 图生图")
+                from forgecore.engines import create_engine
+                from gui.common import load_env_config
+                
+                config = load_env_config()
+                engine = create_engine("agnes", config)
+                
+                # ✅ 修复：Agnes 的 image_to_image 不需要 negative 参数
+                try:
+                    if hasattr(engine, 'image_to_image'):
+                        logs.append("🔄 调用 engine.image_to_image...")
+                        final_image = engine.image_to_image(
+                            prompt=prompt, 
+                            image=ref_img,
+                            strength=strength,
+                            width=768, height=1024
+                        )
+                    else:
+                        logs.append("⚠️ 引擎无 image_to_image，降级为文生图")
+                        final_image = engine.generate_single(prompt=prompt, width=768, height=1024)
+                except TypeError:
+                    # 兼容签名差异
+                    final_image = engine.image_to_image(prompt=prompt, images=[ref_img], strength=strength)
+                    
+                logs.append("✅ Agnes API 图生图完成")
+
+            # ==========================================
+            # 路径 B: 本地模型 ControlNet
+            # ==========================================
+            else:
+                if not model_name:
+                    return None, "❌ 选择本地引擎时，必须选择本地模型。"
+                
+                from forgecore.config.registry import ModelRegistry
+                from forgecore.skills.manager import skill_manager
+                
+                all_models = ModelRegistry.scan_checkpoints("sd15")
+                model_obj = next((m for m in all_models if m["name"] == model_name), None)
+                if not model_obj:
+                    return None, "❌ 找不到模型路径"
+                model_path = model_obj["absolute_path"]
+                logs.append(f"📂 本地模型: {model_name}")
+
+                # 调用 ControlNet Skill
+                if cn_type and cn_type != "无 (纯图生图)":
+                    logs.append(f"🎛️ 调用本地 ControlNet (类型: {cn_type})")
+                    res = skill_manager.run(
+                        "controlnet", action="generate", image=ref_img, prompt=prompt,
+                        negative_prompt=negative, model_path=model_path,
+                        controlnet_type=cn_type, controlnet_conditioning_scale=strength
+                    )
+                else:
+                    logs.append(f"🖼️ 调用本地图生图")
+                    res = skill_manager.run(
+                        "controlnet", action="generate", image=ref_img, prompt=prompt,
+                        negative_prompt=negative, model_path=model_path,
+                        controlnet_type="canny", controlnet_conditioning_scale=0.0, strength=strength
+                    )
+
+                if res.get("status") == "success":
+                    out_path = res["result"].get("output_path")
+                    if out_path and Path(out_path).exists():
+                        final_image = Image.open(out_path)
+                        logs.append(f"✅ 本地生成成功")
+                    elif "image" in res["result"]:
+                        final_image = res["result"]["image"]
+                else:
+                    logs.append(f"❌ 本地生成失败: {res.get('error')}")
+
+            # ==========================================
+            # 核心：自动保存功能 (参考 app.py 原有逻辑)
+            # ==========================================
+            if final_image is not None:
+                from forgecore.config.paths import Paths
+                from datetime import datetime
+                
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                # 使用 Paths.OUTPUT_DIR，如果不可用则回退到 output 目录
+                save_dir = Paths.OUTPUT_DIR if hasattr(Paths, 'OUTPUT_DIR') else Path("output")
+                save_dir.mkdir(parents=True, exist_ok=True)
+                
+                save_path = save_dir / f"img2img_{timestamp}.png"
+                final_image.save(save_path)
+                logs.append(f"💾 图片已自动保存: {save_path}")
+                
+                return final_image, "\n".join(logs)
+            else:
+                return None, "\n".join(logs) + "\n❌ 未生成有效图片"
+
+        except Exception as e:
+            import traceback
+            return None, f"❌ 执行出错: {str(e)}\n{traceback.format_exc()}"
+            
     def _get_models(self, model_type: str) -> list:
         if not FORGE_CORE_AVAILABLE: return ["ForgeCore 未就绪"]
         try: return [m["name"] for m in ModelRegistry.scan_checkpoints(model_type)]
