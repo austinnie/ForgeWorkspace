@@ -1,0 +1,9 @@
+{
+    "name": "fix_human_anatomy",
+    "version": "1.0.0",
+    "description": "修复人体结构错误",
+    "tags": [
+        "image",
+        "fix"
+    ]
+}

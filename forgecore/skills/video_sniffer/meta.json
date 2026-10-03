@@ -1,0 +1,9 @@
+{
+    "name": "video_sniffer",
+    "version": "1.0.0",
+    "description": "网页视频嗅探器",
+    "tags": [
+        "media",
+        "sniffer"
+    ]
+}

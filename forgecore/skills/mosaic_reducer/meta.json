@@ -1,0 +1,9 @@
+{
+    "name": "mosaic_reducer",
+    "version": "1.0.0",
+    "description": "马赛克减弱与画质增强",
+    "tags": [
+        "image",
+        "enhance"
+    ]
+}

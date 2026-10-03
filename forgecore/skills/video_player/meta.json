@@ -1,0 +1,9 @@
+{
+    "name": "video_player",
+    "version": "1.0.0",
+    "description": "视频播放器",
+    "tags": [
+        "media",
+        "video"
+    ]
+}
