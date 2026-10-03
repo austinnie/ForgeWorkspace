@@ -1,231 +1,243 @@
 # apps/artforge/gui/unified_app.py
 """
-ArtForge Ultimate - 超级工作台 (基于 ForgeCore 基盘)
-融合：东方艺术 / 通用生图&ControlNet / 鉴赏排版 / 自动化分发
+ArtForge Ultimate - 超级工作台 (完整版)
+1. 完整复用 app.py 的 ArtForgeApp 类 (预设/模型/LoRA/后处理)
+2. 完整的 ControlNet 流程 (含参考图上传、模型路径获取)
+3. 90 个技能的全局调度
 """
 import gradio as gr
 import sys
 import os
+import json
 import logging
 from pathlib import Path
 from PIL import Image
 
 # ==========================================
-# 1. 路径注入 (确保能导入 forgecore)
+# 1. 路径注入 & 环境初始化
 # ==========================================
-APP_ROOT = Path(__file__).resolve().parent.parent
-PROJECT_ROOT = APP_ROOT.parent.parent  # 指向 ForgeWorkspace 根目录
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(APP_ROOT))
 
-# 加载环境变量
 ENV_PATH = PROJECT_ROOT / ".env"
 if ENV_PATH.exists():
-    from dotenv import load_dotenv
-    load_dotenv(ENV_PATH, override=True)
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(ENV_PATH, override=True)
+    except ImportError:
+        pass
 
 # ==========================================
-# 2. 导入 ForgeCore 基盘 (您已写好的轮子)
+# 2. 导入核心模块
 # ==========================================
 try:
-    from forgecore.config.paths import Paths
+    from forgecore.skills.manager import SkillManager, skill_manager
     from forgecore.config.registry import ModelRegistry
     from forgecore.engines import create_engine
-    from forgecore.post_process import (
-        AgingProcessor, InscriptionGenerator, 
-        SealGenerator, WatermarkProcessor
-    )
-    from forgecore.skills.controlnet.skill import Controlnet
     print("✅ ForgeCore 基盘加载成功")
 except ImportError as e:
     print(f"❌ ForgeCore 加载失败: {e}")
     sys.exit(1)
 
+# 导入 app.py 的 ArtForgeApp 类 (复用其预设扫描/生图/后处理逻辑)
+try:
+    from apps.artforge.gui.app import ArtForgeApp
+    print("✅ ArtForgeApp (app.py) 导入成功")
+except ImportError as e:
+    print(f"❌ app.py 导入失败: {e}")
+    ArtForgeApp = None
+
+# 初始化技能管理器
+skill_manager.scan()
+
 # ==========================================
-# 3. 业务逻辑封装 (直接调用 ForgeCore)
+# 3. Tab 1: 东方艺术 (100% 复用 app.py 逻辑)
 # ==========================================
-
-def generate_art_forge(prompt, negative, theme, use_aging, use_inscription, use_seal):
-    """Tab 1: 东方艺术生成 (调用 ForgeCore 后处理流水线)"""
-    logs = ["🚀 启动东方艺术流水线..."]
-    
-    # 1. 基础生图 (调用 ForgeCore 引擎)
-    engine = create_engine("pollinations", {}) # 或 local_sdxl
-    image = engine.generate_single(prompt=prompt, negative_prompt=negative, width=768, height=1024)
-    logs.append(f"✅ 基础出图: {image.size}")
-    
-    # 2. 做旧 (调用 ForgeCore AgingProcessor)
-    if use_aging:
-        ap = AgingProcessor(seed=42)
-        image = ap.apply(image.convert("RGB"), texture="xuan_paper", strength=0.55)
-        logs.append("📜 做旧完成 (宣纸纹理)")
-        
-    # 3. 题词 (调用 ForgeCore InscriptionGenerator)
-    if use_inscription:
-        ig = InscriptionGenerator(seed=42)
-        text, _ = ig.generate(theme=theme, format="waka", return_meta=True)
-        # 这里简化渲染逻辑，实际调用 InscriptionRenderer
-        logs.append(f"🖌️ 题词生成: {text[:20]}...")
-        
-    # 4. 印章 (调用 ForgeCore SealGenerator)
-    if use_seal:
-        sg = SealGenerator()
-        image = sg.apply_scheme(image.convert("RGBA"), "東方藝術", scheme="default")
-        logs.append("🔴 印章完成")
-        
-    return image.convert("RGB"), "\n".join(logs)
-
-
-def generate_with_controlnet(model_name, prompt, negative, cn_type, cn_image, strength):
-    """Tab 2: 通用生图 & ControlNet (融合 sd-gui 能力)"""
-    logs = ["🚀 启动 ControlNet 流水线..."]
-    
-    # 1. 获取模型绝对路径 (调用 ForgeCore ModelRegistry)
-    models = ModelRegistry.scan_checkpoints("sd15")
-    model_path = next((m["absolute_path"] for m in models if m["name"] == model_name), None)
-    if not model_path:
-        return None, "❌ 未找到该模型，请检查 models_index"
-    logs.append(f"📂 模型路径: {model_path}")
-    
-    # 2. 预处理 ControlNet (调用 ForgeCore Controlnet)
-    cn_kwargs = {}
-    if cn_image and cn_type:
-        cn = Controlnet()
-        # 调用 ForgeCore 的 detect_pose 等预处理
-        processed_img = cn.detect_pose(cn_image, cn_type) 
-        cn_kwargs["control_image"] = processed_img
-        cn_kwargs["controlnet_type"] = cn_type
-        cn_kwargs["controlnet_strength"] = strength
-        logs.append(f"🎛️ ControlNet 预处理完成: {cn_type}")
-        
-    # 3. 生图 (调用 ForgeCore 引擎)
-    engine = create_engine("local_sd15", {"model_path": model_path})
-    image = engine.generate_single(
-        prompt=prompt, negative_prompt=negative, 
-        width=512, height=768, **cn_kwargs
-    )
-    logs.append("✅ 生成完成")
-    return image, "\n".join(logs)
-
-
-def curate_and_format(image):
-    """Tab 3: 鉴赏与排版 (融合 PromptForge 能力)"""
-    if image is None:
-        return "请先上传图片", ""
-    
-    logs = ["🚀 启动 AI 鉴赏与排版..."]
-    # 这里调用 apps/artforge/skills/image_curator 的逻辑
-    # 实际代码中会调用 BLIP/Ollama 生成鉴赏文案，并转为微信排版 HTML
-    logs.append("✅ 鉴赏文案生成完成")
-    logs.append("✅ 微信富文本排版完成")
-    
-    html_content = f"""
-    <div style="text-align: center; font-family: 'Songti SC', serif;">
-        <h2 style="color: #8B0000;">🎎 东方艺术鉴赏</h2>
-        <p style="color: #555; line-height: 1.8;">
-            这幅作品展现了极高的艺术水准，线条流畅，色彩古朴...<br>
-            (此处由 image_curator 多模态 AI 自动生成深度解析)
-        </p>
-        <hr style="border: 1px dashed #ccc;">
-        <p style="font-size: 12px; color: #999;">由 ArtForge Ultimate 自动生成</p>
-    </div>
-    """
-    return "\n".join(logs), html_content
+def build_art_forge_tab(app_instance: ArtForgeApp):
+    """构建东方艺术 Tab (直接调用 app.py 的 _build_generation_tab)"""
+    with gr.Tab("🎨 东方艺术"):
+        # 直接复用 app.py 的 UI 构建方法，所有组件和事件绑定都会在这里生成
+        app_instance._build_generation_tab()
 
 
 # ==========================================
-# 4. 构建 Gradio 超级 GUI
+# 4. Tab 2: 通用生图 & ControlNet (完整参数)
+# ==========================================
+def build_controlnet_tab(app_instance: ArtForgeApp):
+    with gr.Tab(" 通用生图 & ControlNet"):
+        gr.Markdown("### 🧍 通用生图 (调用 forgecore.controlnet skill)")
+        gr.Markdown("💡 **注意**：ControlNet 必须上传参考图，并选择本地模型")
+        
+        with gr.Row():
+            with gr.Column(scale=1):
+                # 模型选择 (复用 app 的模型扫描)
+                cn_model_dd = gr.Dropdown(
+                    choices=app_instance._get_models("sd15"),
+                    label="选择本地模型 (SD1.5)",
+                    value=app_instance._get_models("sd15")[0] if app_instance._get_models("sd15") else None
+                )
+                
+                # 提示词
+                cn_prompt = gr.Textbox(label="提示词 (Prompt)", value="1girl, standing, masterpiece", lines=2)
+                cn_neg = gr.Textbox(label="负面提示词", value="worst quality, lowres", lines=1)
+                
+                # ControlNet 参数
+                cn_type_dd = gr.Dropdown(
+                    choices=["openpose", "canny", "depth", "lineart", "hed"],
+                    label="ControlNet 类型",
+                    value="openpose"
+                )
+                cn_strength = gr.Slider(0.1, 1.0, value=0.6, label="ControlNet 强度")
+                
+                # 参考图上传 (关键！)
+                cn_img_input = gr.Image(label="📎 上传参考图 (Control Source)", type="pil")
+                
+                cn_btn = gr.Button("🚀 生成 (ControlNet)", variant="primary", size="lg")
+                
+            with gr.Column(scale=1):
+                cn_out = gr.Image(label="生成结果", type="pil")
+                cn_log = gr.Textbox(label="生成日志", lines=10)
+
+        def run_controlnet(model_name, prompt, negative, cn_type, strength, ref_image):
+            logs = [" 启动 ControlNet 流水线..."]
+            
+            if not ref_image:
+                return None, "❌ 请上传参考图！ControlNet 需要参考图来提取姿态/边缘。"
+            if not model_name:
+                return None, "❌ 请选择本地模型。"
+
+            try:
+                # 1. 获取模型绝对路径 (复用 app.py 的逻辑)
+                model_path = None
+                found_in_type = "sd15"
+                for m_type in ["sd15", "sdxl"]:
+                    models = ModelRegistry.scan_checkpoints(m_type)
+                    for m in models:
+                        if m["name"] == model_name:
+                            model_path = m["absolute_path"]
+                            found_in_type = m_type
+                            break
+                    if model_path: break
+                
+                if not model_path:
+                    return None, f"❌ 找不到模型: {model_name}"
+                logs.append(f"📂 模型路径: {model_path} (类型: {found_in_type})")
+
+                # 2. 调用 ControlNet Skill
+                logs.append(f"🎛️ 调用 ControlNet Skill (类型: {cn_type})...")
+                
+                result = skill_manager.run(
+                    "controlnet",
+                    action="generate",
+                    image=ref_image,
+                    prompt=prompt,
+                    negative_prompt=negative,
+                    controlnet_type=cn_type,
+                    model_path=model_path,
+                    controlnet_conditioning_scale=strength,
+                    num_inference_steps=20,
+                    guidance_scale=7.5
+                )
+
+                if result.get("status") == "success":
+                    out_path = result["result"].get("output_path")
+                    if out_path and Path(out_path).exists():
+                        logs.append(f"✅ 生成成功: {Path(out_path).name}")
+                        return Image.open(out_path), "\n".join(logs)
+                    else:
+                        logs.append("⚠️ 生成成功但未找到输出图片路径")
+                        return None, "\n".join(logs)
+                else:
+                    logs.append(f"❌ 失败: {result.get('error')}")
+                    return None, "\n".join(logs)
+
+            except Exception as e:
+                return None, f"❌ 执行出错: {str(e)}"
+
+        cn_btn.click(
+            fn=run_controlnet,
+            inputs=[cn_model_dd, cn_prompt, cn_neg, cn_type_dd, cn_strength, cn_img_input],
+            outputs=[cn_out, cn_log]
+        )
+
+
+# ==========================================
+# 5. Tab 3: 技能中心 (90 Skills 动态调度)
+# ==========================================
+def build_skill_hub_tab():
+    with gr.Tab("🛠️ 技能中心 (90 Skills)"):
+        gr.Markdown("### 🚀 ForgeCore 全局技能调度器")
+        gr.Markdown("💡 **提示**：参数需填写合法的 JSON 格式。")
+        
+        skill_names = [s['name'] for s in skill_manager.list_skills()]
+        
+        with gr.Row():
+            with gr.Column(scale=1):
+                skill_dd = gr.Dropdown(
+                    choices=skill_names, 
+                    label="选择技能", 
+                    value="search_engine" if "search_engine" in skill_names else skill_names[0]
+                )
+                params_input = gr.Textbox(
+                    label="执行参数 (JSON 格式)",
+                    value='{"query": "AI 绘画", "kind": "images", "limit": 5}',
+                    lines=6
+                )
+                run_btn = gr.Button("🚀 执行技能", variant="primary", size="lg")
+            with gr.Column(scale=1):
+                log_output = gr.Textbox(label="执行日志", lines=12, interactive=False)
+                result_output = gr.JSON(label="返回结果")
+
+        def execute_skill(skill_name, params_json):
+            logs = [f" 执行: {skill_name}"]
+            try:
+                kwargs = json.loads(params_json) if params_json.strip() else {}
+                result = skill_manager.run(skill_name, **kwargs)
+                if result.get("status") == "success":
+                    logs.append("✅ 成功")
+                    for k, v in result.get("result", {}).items():
+                        if isinstance(v, str) and "path" in k.lower():
+                            logs.append(f" 📂 {k}: {v}")
+                else:
+                    logs.append(f"❌ 失败: {result.get('error')}")
+                return "\n".join(logs), result
+            except Exception as e:
+                return f"❌ 错误: {e}", {}
+
+        run_btn.click(fn=execute_skill, inputs=[skill_dd, params_input], outputs=[log_output, result_output])
+
+
+# ==========================================
+# 6. 构建主 GUI
 # ==========================================
 def build_unified_gui():
-    # 获取系统状态 (调用 ForgeCore)
-    sd15_count = len(ModelRegistry.scan_checkpoints("sd15"))
-    sdxl_count = len(ModelRegistry.scan_checkpoints("sdxl"))
+    if not ArtForgeApp:
+        return gr.Blocks().update() # 防止崩溃
+    
+    # 实例化 ArtForgeApp (加载预设、LoRA 等)
+    app = ArtForgeApp()
     
     with gr.Blocks(
         title="ArtForge Ultimate · 全能 AI 创作工作台", 
         theme=gr.themes.Soft()
     ) as demo:
         
-        # 顶部状态栏
         with gr.Row():
             gr.Markdown("# 🎎 ArtForge Ultimate")
-            gr.Markdown(f"**状态**: 🟢 ForgeCore 就绪 | **SD1.5**: {sd15_count} | **SDXL**: {sdxl_count}")
+            gr.Markdown(f"**状态**: 🟢 ForgeCore 就绪 | **技能**: {len(skill_manager.list_skills())} 个")
             
         with gr.Tabs():
-            # ================= Tab 1: 东方艺术 =================
-            with gr.Tab("🎨 东方艺术"):
-                with gr.Row():
-                    with gr.Column(scale=1):
-                        art_prompt = gr.Textbox(label="提示词", value="ukiyo-e style, a beautiful yokai")
-                        art_neg = gr.Textbox(label="负面提示词", value="worst quality, lowres")
-                        art_theme = gr.Dropdown(["天狗", "河童", "雪女", "九尾狐"], label="主题", value="天狗")
-                        
-                        with gr.Row():
-                            cb_aging = gr.Checkbox(label="📜 做旧 (宣纸)", value=True)
-                            cb_ins = gr.Checkbox(label="🖌️ 题词 (和歌)", value=True)
-                            cb_seal = gr.Checkbox(label="🔴 印章", value=True)
-                            
-                        art_btn = gr.Button("🚀 生成东方艺术", variant="primary")
-                    with gr.Column(scale=1):
-                        art_out = gr.Image(label="作品预览", type="pil")
-                        art_log = gr.Textbox(label="流水线日志", lines=8)
-                        
-                art_btn.click(
-                    fn=generate_art_forge,
-                    inputs=[art_prompt, art_neg, art_theme, cb_aging, cb_ins, cb_seal],
-                    outputs=[art_out, art_log]
-                )
-
-            # ================= Tab 2: 通用生图 & ControlNet =================
-            with gr.Tab("🧍 通用生图 & ControlNet"):
-                with gr.Row():
-                    with gr.Column(scale=1):
-                        # 动态获取 ForgeCore 扫描到的模型
-                        sd15_models = [m["name"] for m in ModelRegistry.scan_checkpoints("sd15")]
-                        cn_model_dd = gr.Dropdown(sd15_models, label="主模型 (SD1.5)", value=sd15_models[0] if sd15_models else None)
-                        
-                        cn_prompt = gr.Textbox(label="提示词", lines=2)
-                        cn_neg = gr.Textbox(label="负面提示词", value="worst quality", lines=1)
-                        
-                        cn_type_dd = gr.Dropdown(["canny", "depth", "lineart", "openpose"], label="ControlNet 类型")
-                        cn_img_input = gr.Image(label="ControlNet 参考图", type="pil")
-                        cn_strength = gr.Slider(0.1, 1.0, value=0.6, label="ControlNet 强度")
-                        
-                        cn_btn = gr.Button("🚀 开始生成", variant="primary")
-                    with gr.Column(scale=1):
-                        cn_out = gr.Image(label="生成结果", type="pil")
-                        cn_log = gr.Textbox(label="生成日志", lines=8)
-                        
-                cn_btn.click(
-                    fn=generate_with_controlnet,
-                    inputs=[cn_model_dd, cn_prompt, cn_neg, cn_type_dd, cn_img_input, cn_strength],
-                    outputs=[cn_out, cn_log]
-                )
-
-            # ================= Tab 3: 鉴赏与排版 =================
-            with gr.Tab("🖼️ 鉴赏排版"):
-                with gr.Row():
-                    with gr.Column():
-                        curate_img = gr.Image(label="上传图片进行鉴赏", type="pil")
-                        curate_btn = gr.Button("✨ AI 鉴赏 & 微信排版", variant="primary")
-                    with gr.Column():
-                        curate_log = gr.Textbox(label="处理日志")
-                        curate_html = gr.HTML(label="微信排版预览 (可直接复制到公众号)")
-                        
-                curate_btn.click(
-                    fn=curate_and_format,
-                    inputs=[curate_img],
-                    outputs=[curate_log, curate_html]
-                )
-
-            # ================= Tab 4: 自动化分发 =================
-            with gr.Tab("🚀 自动化分发"):
-                gr.Markdown("### 📢 一键分发至多平台 (抖音 / B站 / 小红书 / 公众号)")
-                gr.Markdown("*(此处将调用 `skills/social_auto_upload` 模块，读取 output 目录自动打包上传)*")
-                # 实际开发中这里放置分发任务的表单和日志
+            # Tab 1: 东方艺术 (100% 复用 app.py)
+            build_art_forge_tab(app)
+            
+            # Tab 2: ControlNet (完整参数：参考图+模型)
+            build_controlnet_tab(app)
+            
+            # Tab 3: 技能中心
+            build_skill_hub_tab()
 
     return demo
 
 if __name__ == "__main__":
     demo = build_unified_gui()
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=False, inbrowser=True)
+    demo.launch(server_name="127.0.0.1", server_port=7860, share=False, inbrowser=True)

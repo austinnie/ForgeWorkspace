@@ -91,7 +91,7 @@ class SkillManager:
     #  加载 & 执行
     # ──────────────────────────────────────────────
     def load_skill(self, skill_name: str):
-        """动态加载并缓存 Skill 实例"""
+        """动态加载并缓存 Skill 实例 (兼容未继承 BaseSkill 的旧技能)"""
         self.scan()
 
         if skill_name in self._cache:
@@ -109,24 +109,43 @@ class SkillManager:
         except ImportError as e:
             raise ImportError(f"❌ 无法导入 {full_module}: {e}")
 
-        # 在模块中查找继承自 BaseSkill 的类
+        # 1. 优先找继承自 BaseSkill 的类
         from forgecore.skills.base import BaseSkill
-
         skill_cls = None
+        
         for attr_name in dir(mod):
             attr = getattr(mod, attr_name)
             if isinstance(attr, type) and issubclass(attr, BaseSkill) and attr is not BaseSkill:
                 skill_cls = attr
                 break
 
+        # 2. 回退机制：找任何名为 "Skill" 或有 "execute" 方法的类 (兼容旧技能)
         if not skill_cls:
-            raise RuntimeError(f"❌ 在 {full_module} 中找不到继承 BaseSkill 的类")
+            for attr_name in dir(mod):
+                attr = getattr(mod, attr_name)
+                if isinstance(attr, type) and (attr_name.endswith("Skill") or hasattr(attr, "execute")):
+                    skill_cls = attr
+                    break
+                    
+        # 3. 终极回退：如果模块本身有 execute 函数（非类）
+        if not skill_cls and hasattr(mod, "execute"):
+            class FuncWrapper(BaseSkill):
+                def execute(self, **kwargs): return mod.execute(**kwargs)
+            skill_cls = FuncWrapper
 
-        instance = skill_cls(skill_dir=info["dir"])
+        if not skill_cls:
+            raise RuntimeError(f"❌ 在 {full_module} 中找不到可用的 Skill 类或 execute 函数")
+
+        # 实例化 (处理不同构造函数的兼容性)
+        try:
+            instance = skill_cls(skill_dir=info["dir"])
+        except TypeError:
+            instance = skill_cls() # 旧技能可能不需要 skill_dir 参数
+            
         self._cache[skill_name] = instance
         logger.info(f"✅ 技能加载成功: {skill_name} -> {skill_cls.__name__}")
         return instance
-
+        
     def run(self, skill_name: str, **kwargs) -> Dict[str, Any]:
         """统一执行入口 (GUI / CLI 都调这个)"""
         try:
