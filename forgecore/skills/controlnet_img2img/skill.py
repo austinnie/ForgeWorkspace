@@ -507,11 +507,30 @@ class ControlnetImg2Img:
         # 加载 ControlNet
         logger.info("⏳ 加载 ControlNet...")
         try:
-            controlnet = ControlNetModel.from_pretrained(
-                controlnet_model_path,
-                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-                local_files_only=True,
-            )
+            # ✅ 修复后的代码：智能处理 HF 缓存路径或直接使用 Repo ID
+            import os
+            from pathlib import Path
+
+            # 1. 清理错误的缓存目录名，转换为标准的 Repo ID
+            if "models--" in str(controlnet_model_path):
+                # 将 "models--lllyasviel--sd-controlnet-canny" 转换为 "lllyasviel/sd-controlnet-canny"
+                repo_id = str(controlnet_model_path).replace("models--", "").replace("--", "/")
+                logger.info(f"🔄 检测到 HF 缓存目录名，已自动转换为 Repo ID: {repo_id}")
+                model_source = repo_id
+            else:
+                model_source = str(controlnet_model_path)
+
+            # 2. 加载 ControlNet (移除 local_files_only，让 diffusers 自动处理本地缓存或下载)
+            try:
+                controlnet = ControlNetModel.from_pretrained(
+                    model_source,
+                    torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+                    # local_files_only=True,  <-- 删除或注释掉这一行
+                )
+                logger.info("✅ ControlNet 模型加载成功")
+            except Exception as e:
+                logger.error(f"❌ 加载 ControlNet 失败: {e}")
+                raise
         except Exception as e:
             logger.warning(f"加载 ControlNet 失败: {e}")
             # 尝试从子目录加载
