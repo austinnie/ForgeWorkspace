@@ -35,7 +35,7 @@ try:
         AgingProcessor, InscriptionGenerator, 
         SealGenerator, WatermarkProcessor
     )
-    from forgecore.controlnet.skill import Controlnet
+    from forgecore.skills.controlnet.skill import Controlnet
     print("✅ ForgeCore 基盘加载成功")
 except ImportError as e:
     print(f"❌ ForgeCore 加载失败: {e}")

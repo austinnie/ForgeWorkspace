@@ -5,7 +5,7 @@ logger = logging.getLogger('forgecore.pipeline.mixin')
 
 # 优雅降级：尝试导入真实的 ControlNet，失败则提供 Mock
 try:
-    from forgecore.controlnet.skill import Controlnet, CONTROLNET_TYPES
+    from forgecore.skills.controlnet.skill import Controlnet, CONTROLNET_TYPES
     def get_controlnet_info(ctype): return CONTROLNET_TYPES.get(ctype, {})
     def preprocess_image_for_controlnet(*args, **kwargs):
         cn = Controlnet()
