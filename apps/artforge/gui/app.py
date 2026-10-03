@@ -42,57 +42,55 @@ class ArtForgeApp:
         self.categories: List[str] = []
         self.loras: List[Dict] = []
         
-        self._load_presets()
+        # ✅ 新增：定义预设库根目录和当前选中的库
+        self.PRESETS_BASE = PROJECT_ROOT / "shared_assets" / "presets_by_app"
+        self.current_lib = "oriental_forge" # 默认库，你可以改成 "anime_forge"
+        
+        # 初始加载默认库
+        self._load_presets(self.current_lib)
+        
         self._load_loras()
 
-    def _load_presets(self):
-        """动态扫描 presets 目录 (兼容新格式)"""
-        print(f"🔍 正在扫描预设目录: {PRESETS_DIR}")
-        if not PRESETS_DIR.exists():
-            print(f"❌ 预设目录不存在: {PRESETS_DIR}")
+    def _load_presets(self, lib_name: str):
+        """动态扫描指定预设库目录 (兼容新格式)"""
+        self.current_lib = lib_name
+        target_dir = self.PRESETS_BASE / lib_name
+        
+        print(f"🔍 正在扫描预设库: {lib_name} -> {target_dir}")
+        
+        # 清空旧数据
+        self.presets_map = {}
+        self.categories = []
+
+        if not target_dir.exists():
+            print(f"❌ 预设库目录不存在: {target_dir}")
             return
 
-        import importlib.util
-        
-        self.presets_map.clear()
-        self.categories.clear()
-
-        # 遍历分类文件夹 (如 cat, bird, flower...)
-        for sub in sorted(PRESETS_DIR.iterdir()):
-            if not sub.is_dir() or sub.name.startswith('_'):
+        # 扫描逻辑：遍历子文件夹作为分类
+        for theme_dir in sorted(target_dir.iterdir()):
+            if not theme_dir.is_dir() or theme_dir.name.startswith('_'):
                 continue
             
-            category_name = sub.name
-            preset_list = []
+            cat_name = theme_dir.name
+            self.categories.append(cat_name)
+            self.presets_map[cat_name] = []
             
-            # 遍历文件夹下的 .py 预设文件
-            for py_file in sub.glob("*.py"):
+            # 遍历 .py 预设文件
+            for py_file in sorted(theme_dir.glob("*.py")):
                 if py_file.name.startswith('_') or py_file.name == '__init__.py':
                     continue
                 try:
-                    # 动态加载 .py 文件
-                    spec = importlib.util.spec_from_file_location(f"preset_{py_file.stem}", py_file)
+                    spec = importlib.util.spec_from_file_location(py_file.stem, py_file)
                     mod = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(mod)
-                    
-                    preset_data = getattr(mod, "PRESET", None)
-                    
-                    if isinstance(preset_data, dict):
-                        # 确保字典里有 'name' 字段，UI 下拉框依赖它
-                        if "name" not in preset_data:
-                            preset_data["name"] = py_file.stem
-                        
-                        preset_list.append(preset_data)
+                    if hasattr(mod, "PRESET"):
+                        preset_data = mod.PRESET
+                        preset_data["file_path"] = str(py_file) # 保存路径供后续使用
+                        self.presets_map[cat_name].append(preset_data)
                 except Exception as e:
                     print(f"⚠️ 加载预设失败 {py_file.name}: {e}")
-            
-            # 只有当该分类下有有效预设时，才加入地图
-            if preset_list:
-                self.presets_map[category_name] = preset_list
-                self.categories.append(category_name)
-
-        total_presets = sum(len(v) for v in self.presets_map.values())
-        print(f"✅ 成功加载 {len(self.categories)} 个主题分类，共 {total_presets} 个预设")
+        
+        print(f"✅ 库 [{lib_name}] 加载完成: {len(self.categories)} 个分类")
         
     def _load_loras(self):
         """扫描本地 LoRA 目录"""
@@ -135,20 +133,36 @@ class ArtForgeApp:
     def _build_generation_tab(self):
         with gr.Row():
             with gr.Column(scale=1):
-                
-                # 1. 预设与提示词
                 with gr.Group():
                     gr.Markdown("### 📂 主题与预设")
+                    
+                    # ✅ 新增：预设库选择 Dropdown
+                    # 扫描 PRESETS_BASE 下所有文件夹作为选项
+                    available_libs = [d.name for d in self.PRESETS_BASE.iterdir() 
+                                      if d.is_dir() and not d.name.startswith('_')]
+                    
+                    preset_library_dd = gr.Dropdown(
+                        choices=available_libs,
+                        value=self.current_lib,
+                        label=" 预设库 (Preset Library)"
+                    )
+
+                    # 原有的分类 Dropdown
                     category_dd = gr.Dropdown(
-                        choices=self.categories, 
-                        value=self.categories[0] if self.categories else None,
+                        choices=self.categories,
+                        value=(self.categories[0] if self.categories else None),
                         label="主题分类 (Category)"
                     )
+
+                    # 原有的预设 Dropdown
+                    first_cat_presets = self.presets_map.get(self.categories[0], []) if self.categories else []
                     preset_dd = gr.Dropdown(
-                        choices=[p["name"] for p in self.presets_map.get(self.categories[0], [])] if self.categories else [],
+                        choices=[p["name"] for p in first_cat_presets],
+                        value=(first_cat_presets[0]["name"] if first_cat_presets else None),
                         label="预设场景 (Preset)"
                     )
-                    prompt_input = gr.Textbox(label="正向提示词 (Prompt)", lines=4, placeholder="由预设自动生成，可手动修改...")
+                    
+                    prompt_input = gr.Textbox(label="正向提示词 (Prompt)", lines=4, placeholder="由预设自动生成...")
                     negative_input = gr.Textbox(label="负向提示词", lines=2, value="worst quality, low quality, ugly, deformed, blurry, bad anatomy, watermark, text")
 
                 # 2. 引擎选择
@@ -213,16 +227,33 @@ class ArtForgeApp:
 
             # ========== 事件绑定 ==========
             
-            # 预设联动
+            # 1. 切换预设库 -> 更新分类和预设列表
+            def on_lib_change(lib_name):
+                self._load_presets(lib_name) # 重新加载数据
+                
+                # 准备返回的新选项
+                new_cats = self.categories
+                first_cat = new_cats[0] if new_cats else None
+                new_presets = self.presets_map.get(first_cat, []) if first_cat else []
+                first_preset_name = new_presets[0]["name"] if new_presets else None
+                
+                # 返回更新后的 category_dd 和 preset_dd
+                return gr.update(choices=new_cats, value=first_cat), gr.update(choices=[p["name"] for p in new_presets], value=first_preset_name)
+
+            preset_library_dd.change(
+                fn=on_lib_change,
+                inputs=[preset_library_dd],
+                outputs=[category_dd, preset_dd]
+            )
+        
+            # 2. 切换分类 -> 更新预设列表 (保留原有逻辑)
             def on_category_change(cat):
-                presets = self.presets_map.get(cat, [])
-                names = [p["name"] for p in presets]
-                if presets:
-                    prompt = self._build_prompt_from_preset(presets[0])
-                    return gr.update(choices=names, value=names[0]), prompt
-                return gr.update(choices=[], value=None), ""
-            
-            category_dd.change(fn=on_category_change, inputs=category_dd, outputs=[preset_dd, prompt_input])
+                lst = self.presets_map.get(cat, [])
+                names = [p["name"] for p in lst]
+                return gr.update(choices=names, value=(names[0] if names else None))
+
+            category_dd.change(fn=on_category_change, inputs=category_dd, outputs=preset_dd)
+        
             
             def on_preset_change(cat, preset_name):
                 presets = self.presets_map.get(cat, [])
