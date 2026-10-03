@@ -436,6 +436,74 @@ def build_skill_hub_tab():
             except Exception as e: return f"❌ {e}", {}
         run_btn.click(fn=execute_skill, inputs=[skill_dd, params_input], outputs=[log_output, result_output])
 
+    # ============================================================
+    # 🆕 Tab 6: 自动化工作流 (Pipeline)
+    # ============================================================
+    def _build_pipeline_tab(self):
+        """构建自动化流水线 Tab"""
+        with gr.Tab("🚀 自动化工作流"):
+            gr.Markdown("### 🎬 AI 视频/漫画自动化流水线")
+            gr.Markdown("💡 **逻辑**：一键串联 出图 -> 视频 -> 音乐 -> 发布。参考 `ai_mv.py` 逻辑。")
+            
+            with gr.Row():
+                with gr.Column(scale=1):
+                    # 任务类型选择
+                    pipeline_type = gr.Radio(
+                        choices=[(" AI 视频创作 (Video)", "video"), ("📕 漫画生成 (Manga)", "manga")],
+                        value="video", label="选择流水线类型"
+                    )
+                    
+                    # 通用参数
+                    topic_input = gr.Textbox(label="主题 / 故事大纲", value="敦煌飞天", lines=2)
+                    count_slider = gr.Slider(1, 20, value=5, step=1, label="生成数量 (图片数/章节数)")
+                    emotion_dd = gr.Dropdown(
+                        choices=["epic (史诗)", "peaceful (宁静)", "joyful (欢快)", "melancholic (忧伤)"],
+                        value="epic (史诗)", label="配乐情绪 (仅视频有效)"
+                    )
+                    
+                    with gr.Row():
+                        auto_publish_cb = gr.Checkbox(label="完成后自动发布 (视频号)", value=False)
+                    
+                    run_pipeline_btn = gr.Button("🚀 启动流水线", variant="primary", size="lg")
+                    
+                with gr.Column(scale=1):
+                    pipeline_log = gr.Textbox(label="流水线日志", lines=20, max_lines=30)
+                    result_file = gr.File(label="最终产物下载")
+
+            def run_pipeline_task(p_type, topic, count, emotion, auto_pub):
+                logs = [f"🚀 启动 {p_type} 流水线...", f"主题: {topic}"]
+                try:
+                    # 这里为了演示，直接调用上面写的脚本逻辑，或者您可以直接 import 运行
+                    # 实际生产中建议将 pipeline 逻辑封装成类
+                    logs.append("⏳ 正在后台执行... (请查看控制台输出)")
+                    
+                    # 模拟调用 (实际应调用 skill_manager 串联)
+                    # from scripts.auto_video_pipeline import run_pipeline
+                    # run_pipeline(topic, count, emotion, auto_pub)
+                    
+                    logs.append("✅ 任务已提交 (示例逻辑)")
+                    return "\n".join(logs), None
+                    
+                except Exception as e:
+                    return f"❌ 错误: {e}", None
+
+            run_pipeline_btn.click(
+                fn=run_pipeline_task,
+                inputs=[pipeline_type, topic_input, count_slider, emotion_dd, auto_publish_cb],
+                outputs=[pipeline_log, result_file]
+            )
+            
+            
+    def _build_config_tab(self):
+        with gr.Group():
+            gr.Markdown("### ⚙️ 系统状态")
+            if FORGE_CORE_AVAILABLE:
+                sd15 = len(ModelRegistry.scan_checkpoints("sd15"))
+                sdxl = len(ModelRegistry.scan_checkpoints("sdxl"))
+                lora_count = len(self.loras)
+                gr.Markdown(f"**ForgeCore**: ✅ 已加载\n**SD1.5 模型**: {sd15} 个\n**SDXL 模型**: {sdxl} 个\n**LoRA**: {lora_count} 个")
+            else:
+                gr.Markdown("**ForgeCore**: ❌ 未加载")            
 # ==========================================
 # 8. 主 GUI (修复 Gradio 6.0 警告)
 # ==========================================
@@ -446,11 +514,20 @@ def build_unified_gui():
         with gr.Row():
             gr.Markdown("#  ArtForge Ultimate")
             gr.Markdown(f"**状态**: 🟢 就绪 | **技能**: {len(skill_manager.list_skills())} 个")
-        with gr.Tabs():
+        with gr.Tab("🎨 生图"):
             build_art_forge_tab(app)
+        with gr.Tab("🖼️ 图生图"):               
             build_general_gen_tab()
+        with gr.Tab("🪄 像素魔法"):            
             build_pixel_magic_tab()
+        with gr.Tab("🖼️ 技能"):               
             build_skill_hub_tab()
+        # 👇👇 在这里新增自动化工作流 Tab 👇👇
+        with gr.Tab("🚀 自动化工作流"):
+            self._build_pipeline_tab()
+        # 👆👆 新增结束 👆👆
+        with gr.Tab("⚙️ 配置"):
+            self._build_config_tab()        
     return demo
 
 if __name__ == "__main__":
