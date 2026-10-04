@@ -227,7 +227,27 @@ class ArtForgeApp:
                         value="立轴 (9:16)", label="装裱方式"
                     )
                     with gr.Row():
-                        use_aging_cb = gr.Checkbox(label="古画做旧", value=True)
+                        use_aging_cb = gr.Checkbox(label="启用古画做旧", value=False)
+                        # 2. 新增：做旧强度控制 (放在 use_aging 下方)
+                        aging_strength = gr.Slider(
+                            minimum=0.1, maximum=1.0, value=0.5, step=0.1, 
+                            label="做旧强度 (0.1=轻微泛黄, 1.0=重度破损)",
+                            visible=False # 默认隐藏，等勾选做旧后再显示（可选）
+                        )
+                        # 3. 新增：纸张纹理选择
+                        aging_texture = gr.Dropdown(
+                            choices=["xuan_paper", "silk", "aged", "brown", "none"], 
+                            value="xuan_paper", 
+                            label="纸张纹理类型 (none=无纹理)",
+                            visible=False
+                        )
+                        # 可选：添加联动逻辑，勾选做旧时显示高级选项
+                        def on_aging_toggle(is_enabled):
+                            return gr.update(visible=is_enabled), gr.update(visible=is_enabled)
+
+                        use_aging_cb.change(fn=on_aging_toggle, inputs=use_aging_cb, outputs=[aging_strength, aging_texture])                        
+                        # 👆👆 新增结束 👆👆
+                        
                         use_inscription_cb = gr.Checkbox(label="竖排题词", value=True)
                         use_seal_cb = gr.Checkbox(label="印章", value=True)
                         use_watermark_cb = gr.Checkbox(label="隐形水印", value=False)
@@ -309,7 +329,8 @@ class ArtForgeApp:
                 prompt_input, negative_input,
                 lora_dd, lora_weight,
                 steps_slider, cfg_slider, seed_input, count_slider,
-                use_aging_cb, use_inscription_cb, use_seal_cb, use_watermark_cb,
+                use_aging_cb, aging_strength, aging_texture, 
+                use_inscription_cb, use_seal_cb, use_watermark_cb,
                 inscription_language_dd, use_appraise_cb
             ],
             outputs=[output_image, output_info]  # 🔥 严格对应 2 个输出
@@ -580,7 +601,7 @@ class ArtForgeApp:
 
     def _generate_image(self, engine_mode, api_provider, model_name, category, preset_name, composition, 
                         prompt, negative, lora_name, lora_weight, steps, cfg, seed, count,
-                        use_aging, use_inscription, use_seal, use_watermark, inscription_lang, use_appraise):
+                        use_aging,aging_strength, aging_texture,use_inscription, use_seal, use_watermark, inscription_lang, use_appraise):
         """统一生成入口 (严格返回 2 个值)"""
         try:
             log = [f"🚀 开始生成任务...", f"📂 分类: {category} | 预设: {preset_name}"]
@@ -611,7 +632,9 @@ class ArtForgeApp:
             # 3. 后期处理流水线
             if ARTFORGE_CORE_AVAILABLE:
                 final_image = self._apply_post_process(
-                    final_image, composition, use_aging, use_inscription, use_seal, use_watermark, 
+                    final_image, composition, 
+                    use_aging,aging_strength, aging_texture,
+                    use_inscription, use_seal, use_watermark, 
                     inscription_lang, category, log
                 )
                 
@@ -710,7 +733,7 @@ class ArtForgeApp:
             log.append(traceback.format_exc())
             return None, "\n".join(log)
 
-    def _apply_post_process(self, image, composition, use_aging, use_inscription, use_seal, use_watermark, lang, theme, log):
+    def _apply_post_process(self, image, composition, use_aging, aging_strength, aging_texture,use_inscription, use_seal, use_watermark, lang, theme, log):
         """后期处理流水线"""
         try:
             from PIL import Image
@@ -752,10 +775,20 @@ class ArtForgeApp:
                 try:
                     from forgecore.post_process.aging_processor import AgingProcessor
                     aging = AgingProcessor()
-                    image = aging.apply(image.convert("RGB"), texture="xuan_paper", strength=0.4)
+                    
+                    # 1. 处理纹理：如果 UI 选了 "none"，则传 None 给底层（只做老化不加纹理）
+                    tex = aging_texture if aging_texture != "none" else None
+                    
+                    # 2. 使用 UI 传来的动态参数替换硬编码
+                    image = aging.apply(
+                        image.convert("RGB"), 
+                        texture=tex, 
+                        strength=float(aging_strength)
+                    )
                     image = image.convert("RGBA")
-                    log.append("📜 做旧完成")
-                except Exception as e: log.append(f"⚠️ 做旧失败: {e}")
+                    log.append(f"📜 做旧完成 (纹理: {aging_texture}, 强度: {aging_strength})")
+                except Exception as e: 
+                    log.append(f"⚠️ 做旧失败: {e}")
                 
             # 5. 水印
             if use_watermark:
