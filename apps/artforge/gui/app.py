@@ -219,73 +219,81 @@ class ArtForgeApp:
                         seed_input = gr.Number(value=-1, label="种子 (Seed, -1 为随机)", precision=0)
                         count_slider = gr.Slider(minimum=1, maximum=4, value=1, step=1, label="生成数量 (Batch Size)")
                 
-                # 5. 后期处理与装裱
+                # 5. 后期处理与装裱 (逻辑优化版)
                 with gr.Group():
-                    gr.Markdown("### 🖌️ 后期处理与装裱")
+                    gr.Markdown("### ️ 后期处理与装裱")
+                    
+                    # 1. 装裱方式 (全局基础，独立一行)
                     composition_dd = gr.Dropdown(
                         choices=["无 (仅画心)", "立轴 (9:16)", "横卷 (16:9)", "屏风 (4:3)", "团扇 (1:1)"],
                         value="立轴 (9:16)", label="装裱方式"
                     )
+
+                    # 2. 核心功能开关 (最常用的三个，直接露出来)
                     with gr.Row():
-                        use_aging_cb = gr.Checkbox(label="启用古画做旧", value=False)
-                        # 2. 新增：做旧强度控制 (放在 use_aging 下方)
-                        aging_strength = gr.Slider(
-                            minimum=0.1, maximum=1.0, value=0.5, step=0.1, 
-                            label="做旧强度 (0.1=轻微泛黄, 1.0=重度破损)",
-                            visible=False # 默认隐藏，等勾选做旧后再显示（可选）
-                        )
-                        # 3. 新增：纸张纹理选择
-                        aging_texture = gr.Dropdown(
-                            choices=["xuan_paper", "silk", "aged", "brown", "none"], 
-                            value="xuan_paper", 
-                            label="纸张纹理类型 (none=无纹理)",
-                            visible=False
-                        )
-                        # 可选：添加联动逻辑，勾选做旧时显示高级选项
-                        def on_aging_toggle(is_enabled):
-                            return gr.update(visible=is_enabled), gr.update(visible=is_enabled)
+                        use_aging_cb = gr.Checkbox(label="启用古画做旧", value=False, scale=1)
+                        use_inscription_cb = gr.Checkbox(label="启用竖排题词", value=True, scale=1)
+                        use_seal_cb = gr.Checkbox(label="启用印章", value=True, scale=1)
 
-                        use_aging_cb.change(fn=on_aging_toggle, inputs=use_aging_cb, outputs=[aging_strength, aging_texture])                        
-                        # 👆👆 新增结束 👆👆
+                    # 3. 做旧高级设置 (折叠，内部左右对齐)
+                    with gr.Accordion("📜 做旧高级设置", open=False):
+                        with gr.Row():
+                            aging_strength = gr.Slider(
+                                minimum=0.1, maximum=1.0, value=0.5, step=0.1, 
+                                label="做旧强度 (0.1=轻微泛黄, 1.0=重度破损)",
+                                scale=2
+                            )
+                            aging_texture = gr.Dropdown(
+                                choices=["xuan_paper", "silk", "aged", "brown", "none"], 
+                                value="xuan_paper", 
+                                label="纸张纹理类型 (none=无纹理)",
+                                scale=1
+                            )
+
+                    # 4. 题词高级设置 (折叠，把“内置库”移回这里，逻辑归位！)
+                    with gr.Accordion("🖌️ 题词高级设置", open=False):
+                        with gr.Row():
+                            inscription_language_dd = gr.Dropdown(
+                                choices=["auto", "zh (中文)", "ja (日文)", "en (英文)"],
+                                value="auto", label="题词语言", scale=1
+                            )
+                            inscription_format_dd = gr.Dropdown(
+                                choices=[
+                                    ("自动 (Auto)", "auto"), 
+                                    ("五言绝句 (20字)", "wuyan"), 
+                                    ("七言绝句 (28字)", "qiyan"), 
+                                    ("和歌 (Waka)", "waka"), 
+                                    ("俳句 (Haiku)", "haiku"), 
+                                    ("题跋 (散文)", "tiba")
+                                ],
+                                value="auto", 
+                                label="题词体裁 (Format)", scale=1
+                            )
+                            inscription_position_dd = gr.Dropdown(
+                                choices=[
+                                    ("右上题诗 (Top Right)", "top_right"), 
+                                    ("左下落款 (Bottom Left)", "bottom_left"), 
+                                    ("左上角 (Top Left)", "top_left")
+                                ],
+                                value="top_right", 
+                                label="题词位置 (Position)", scale=1
+                            )
                         
-                        use_inscription_cb = gr.Checkbox(label="竖排题词", value=True)
+                        # 👇 移回题词区域，逻辑就通了 👇
+                        with gr.Row():
+                            use_library_only_cb = gr.Checkbox(
+                                label="仅用内置诗句库 (离线/秒出，不调用 AI)", value=False
+                            )
+
+                    # 5. 其他/实验性功能 (剩下的低频选项)
+                    with gr.Row():
+                        use_watermark_cb = gr.Checkbox(label="隐形水印", value=False, scale=1)
+                        use_appraise_cb = gr.Checkbox(label="AI 自动鉴赏 (BLIP)", value=False, scale=1)
                         
-                        use_seal_cb = gr.Checkbox(label="印章", value=True)
-                        use_watermark_cb = gr.Checkbox(label="隐形水印", value=False)
-                    inscription_language_dd = gr.Dropdown(
-                        choices=["auto", "zh (中文)", "ja (日文)", "en (英文)"],
-                        value="auto", label="题词语言"
-                    )
-
-                    # 👇👇 新增：题词体裁和位置控制 👇
-                    inscription_format_dd = gr.Dropdown(
-                        choices=[
-                            ("自动 (Auto)", "auto"), 
-                            ("五言绝句 (20字)", "wuyan"), 
-                            ("七言绝句 (28字)", "qiyan"), 
-                            ("和歌 (Waka)", "waka"), 
-                            ("俳句 (Haiku)", "haiku"), 
-                            ("题跋 (散文)", "tiba")
-                        ],
-                        value="auto", 
-                        label="题词体裁 (Format)"
-                    )
-
-                    inscription_position_dd = gr.Dropdown(
-                        choices=[
-                            ("右上题诗 (Top Right)", "top_right"), 
-                            ("左下落款 (Bottom Left)", "bottom_left"), 
-                            ("左上角 (Top Left)", "top_left")
-                        ],
-                        value="top_right", 
-                        label="题词位置 (Position)"
-                    )
-                    # 👆👆 新增结束 👆👆
-                    
-                    use_appraise_cb = gr.Checkbox(label="生成后 AI 自动鉴赏 (BLIP)", value=False)
-                
+                # 生成按钮 (保留原位)
                 generate_btn = gr.Button("🎨 开始生成", variant="primary", size="lg")
             
+            # 右侧输出列 (保留原位，绝对不丢)
             with gr.Column(scale=2):
                 output_image = gr.Image(label="生成结果", type="filepath", height=700)
                 output_info = gr.Textbox(label="执行日志", lines=12)
@@ -357,7 +365,8 @@ class ArtForgeApp:
                 lora_dd, lora_weight,
                 steps_slider, cfg_slider, seed_input, count_slider,
                 use_aging_cb, aging_strength, aging_texture, 
-                use_inscription_cb, , inscription_format_dd, inscription_position_dd, 
+                use_inscription_cb, inscription_format_dd, inscription_position_dd, 
+                use_library_only_cb,
                 use_seal_cb, use_watermark_cb,
                 inscription_language_dd, use_appraise_cb
             ],
@@ -631,6 +640,7 @@ class ArtForgeApp:
                         prompt, negative, lora_name, lora_weight, steps, cfg, seed, count,
                         use_aging,aging_strength, aging_texture,
                         use_inscription, inscription_format, inscription_position, 
+                        use_library_only,
                         use_seal, use_watermark, inscription_lang, use_appraise):
         """统一生成入口 (严格返回 2 个值)"""
         try:
@@ -659,13 +669,14 @@ class ArtForgeApp:
                 
             final_image = images[0]
             
-            # 3. 后期处理流水线
+            # 3. 后期处理流水线 (参数严格对齐)
             if ARTFORGE_CORE_AVAILABLE:
                 final_image = self._apply_post_process(
-                    final_image, composition, 
-                    use_aging,aging_strength, aging_texture,
-                    use_inscription, use_seal, use_watermark, 
-                    inscription_lang, category, log
+                    final_image, composition,
+                    use_aging, aging_strength, aging_texture,
+                    use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
+                    use_seal, use_watermark,
+                    category, log
                 )
                 
             # 4. 保存
@@ -763,47 +774,55 @@ class ArtForgeApp:
             log.append(traceback.format_exc())
             return None, "\n".join(log)
 
-    def _apply_post_process(self, image, composition, use_aging, aging_strength, aging_texture,use_inscription, use_seal, use_watermark, lang, theme, log):
-        """后期处理流水线"""
+    def _apply_post_process(self, image, composition,
+                            use_aging, aging_strength, aging_texture,
+                            use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
+                            use_seal, use_watermark,
+                            theme, log):
+        """后期处理流水线（全参数版）"""
         try:
             from PIL import Image
             if image.mode != 'RGBA': image = image.convert('RGBA')
-            
+
             # 1. 装裱
             if composition and composition != "无 (仅画心)":
                 try:
                     comp_map = {"立轴 (9:16)": "vertical", "横卷 (16:9)": "horizontal", "屏风 (4:3)": "byobu", "团扇 (1:1)": "fan"}
+                    from services.scroll_composer import ScrollComposer
                     composer = ScrollComposer()
                     image = composer.compose(image, comp_map.get(composition, "vertical"))
                     log.append(f"🖼️ 装裱完成: {composition}")
                 except Exception as e: log.append(f"⚠️ 装裱失败: {e}")
-                
-            # 2. 题词
+
+            # 2. 题词 (使用新参数)
             if use_inscription:
                 try:
                     from forgecore.post_process.inscription_generator import InscriptionGenerator
+                    from compose_artwork import InscriptionRenderer # 注意：如果这里报错，请改回 from forgecore.post_process.inscription_renderer import InscriptionRenderer
+                    
                     ig = InscriptionGenerator()
-                    # 1. 使用 UI 传来的体裁 (format)
+                    backend = "library" if use_library_only else "auto"
+                    
                     text, _ = ig.generate(
                         theme=theme, 
-                        format=inscription_format, #  动态参数
+                        format=inscription_format, 
                         return_meta=True, 
-                        language=inscription_lang if inscription_lang != "auto" else None
+                        language=inscription_lang if inscription_lang != "auto" else None,
+                        backend=backend
                     )
+                    
                     if text:
                         w, h = image.size
                         renderer = InscriptionRenderer()
-                        
-                        # 2. 使用 UI 传来的位置 (position)
                         image = renderer.render(
                             image, text, 
                             font_size=max(24, int(min(w, h) * 0.045)), 
-                            position=inscription_position #  动态参数
+                            position=inscription_position # 这里使用了新参数，不再报错
                         )
-                        log.append(f"🖌️ 题词完成 [{inscription_format} @ {inscription_position}]: {text[:20]}...")
+                        log.append(f"🖌️ 题词完成 [{inscription_format} @ {inscription_position}]")
                 except Exception as e: 
                     log.append(f"⚠️ 题词失败: {e}")
-                
+
             # 3. 印章
             if use_seal:
                 try:
@@ -812,27 +831,18 @@ class ArtForgeApp:
                     image = sg.apply_scheme(image, "東方藝術", scheme="default")
                     log.append("🔴 印章完成")
                 except Exception as e: log.append(f"⚠️ 印章失败: {e}")
-                
-            # 4. 做旧
+
+            # 4. 做旧 (使用新参数)
             if use_aging:
                 try:
                     from forgecore.post_process.aging_processor import AgingProcessor
                     aging = AgingProcessor()
-                    
-                    # 1. 处理纹理：如果 UI 选了 "none"，则传 None 给底层（只做老化不加纹理）
                     tex = aging_texture if aging_texture != "none" else None
-                    
-                    # 2. 使用 UI 传来的动态参数替换硬编码
-                    image = aging.apply(
-                        image.convert("RGB"), 
-                        texture=tex, 
-                        strength=float(aging_strength)
-                    )
+                    image = aging.apply(image.convert("RGB"), texture=tex, strength=float(aging_strength))
                     image = image.convert("RGBA")
-                    log.append(f"📜 做旧完成 (纹理: {aging_texture}, 强度: {aging_strength})")
-                except Exception as e: 
-                    log.append(f"⚠️ 做旧失败: {e}")
-                
+                    log.append(f" 做旧完成 (强度:{aging_strength})")
+                except Exception as e: log.append(f"⚠️ 做旧失败: {e}")
+
             # 5. 水印
             if use_watermark:
                 try:
@@ -842,12 +852,12 @@ class ArtForgeApp:
                     image = image.convert("RGBA")
                     log.append("💧 水印完成")
                 except Exception as e: log.append(f"⚠️ 水印失败: {e}")
-                
+
             return image
         except Exception as e:
             log.append(f"❌ 后期处理整体失败: {e}")
             return image
-
+            
     def _build_config_tab(self):
         with gr.Group():
             gr.Markdown("### ⚙️ 系统状态")
