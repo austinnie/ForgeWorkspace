@@ -774,7 +774,7 @@ class ArtForgeApp:
             log.append(traceback.format_exc())
             return None, "\n".join(log)
 
-    def _apply_post_process(self, image, composition,
+    def _apply_post_process_old(self, image, composition,
                             use_aging, aging_strength, aging_texture,
                             use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
                             use_seal, use_watermark,
@@ -858,6 +858,92 @@ class ArtForgeApp:
             log.append(f"❌ 后期处理整体失败: {e}")
             return image
             
+
+
+
+    def _apply_post_process(self, image, composition,
+                            use_aging, aging_strength, aging_texture,
+                            use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
+                            use_seal, use_watermark,
+                            theme, log):
+        """后期处理流水线 (修正顺序：先题词印章，再装裱)"""
+        try:
+            from PIL import Image
+            if image.mode != 'RGBA': image = image.convert('RGBA')
+
+            # 1. 题词 (先盖在画心上)
+            if use_inscription:
+                try:
+                    from forgecore.post_process.inscription_generator import InscriptionGenerator
+                    from compose_artwork import InscriptionRenderer
+                    
+                    ig = InscriptionGenerator()
+                    backend = "library" if use_library_only else "auto"
+                    
+                    text, _ = ig.generate(
+                        theme=theme, 
+                        format=inscription_format, 
+                        return_meta=True, 
+                        language=inscription_lang if inscription_lang != "auto" else None,
+                        backend=backend
+                    )
+                    
+                    if text:
+                        w, h = image.size
+                        renderer = InscriptionRenderer()
+                        image = renderer.render(
+                            image, text, 
+                            font_size=max(24, int(min(w, h) * 0.045)), 
+                            position=inscription_position
+                        )
+                        log.append(f"️ 题词完成 [{inscription_format} @ {inscription_position}] (模式:{backend})")
+                except Exception as e: log.append(f"️ 题词失败: {e}")
+
+            # 2. 印章 (盖在画心上)
+            if use_seal:
+                try:
+                    from forgecore.post_process.seal_generator import SealGenerator
+                    sg = SealGenerator()
+                    image = sg.apply_scheme(image, "東方藝術", scheme="default")
+                    log.append("🔴 印章完成")
+                except Exception as e: log.append(f"⚠️ 印章失败: {e}")
+
+            # 3. 装裱 (把画心+题词+印章一起装裱)
+            if composition and composition != "无 (仅画心)":
+                try:
+                    comp_map = {"立轴 (9:16)": "vertical", "横卷 (16:9)": "horizontal", "屏风 (4:3)": "byobu", "团扇 (1:1)": "fan"}
+                    from services.scroll_composer import ScrollComposer
+                    composer = ScrollComposer()
+                    image = composer.compose(image, comp_map.get(composition, "vertical"))
+                    log.append(f"🖼️ 装裱完成: {composition}")
+                except Exception as e: log.append(f"⚠️ 装裱失败: {e}")
+
+            # 4. 做旧 (装裱后做旧，让裱边也有纹理)
+            if use_aging:
+                try:
+                    from forgecore.post_process.aging_processor import AgingProcessor
+                    aging = AgingProcessor()
+                    tex = aging_texture if aging_texture != "none" else None
+                    image = aging.apply(image.convert("RGB"), texture=tex, strength=float(aging_strength))
+                    image = image.convert("RGBA")
+                    log.append(f"📜 做旧完成 (纹理:{aging_texture}, 强度:{aging_strength})")
+                except Exception as e: log.append(f"⚠️ 做旧失败: {e}")
+
+            # 5. 水印
+            if use_watermark:
+                try:
+                    from forgecore.post_process.watermark import WatermarkProcessor
+                    wp = WatermarkProcessor()
+                    image = wp.add_subtle_watermark(image.convert("RGB"), "ArtForge", opacity=30)
+                    image = image.convert("RGBA")
+                    log.append("💧 水印完成")
+                except Exception as e: log.append(f"⚠️ 水印失败: {e}")
+
+            return image
+        except Exception as e:
+            log.append(f"❌ 后期处理整体失败: {e}")
+            return image
+        
     def _build_config_tab(self):
         with gr.Group():
             gr.Markdown("### ⚙️ 系统状态")
