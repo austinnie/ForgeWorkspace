@@ -249,12 +249,39 @@ class ArtForgeApp:
                         # 👆👆 新增结束 👆👆
                         
                         use_inscription_cb = gr.Checkbox(label="竖排题词", value=True)
+                        
                         use_seal_cb = gr.Checkbox(label="印章", value=True)
                         use_watermark_cb = gr.Checkbox(label="隐形水印", value=False)
                     inscription_language_dd = gr.Dropdown(
                         choices=["auto", "zh (中文)", "ja (日文)", "en (英文)"],
                         value="auto", label="题词语言"
                     )
+
+                    # 👇👇 新增：题词体裁和位置控制 👇
+                    inscription_format_dd = gr.Dropdown(
+                        choices=[
+                            ("自动 (Auto)", "auto"), 
+                            ("五言绝句 (20字)", "wuyan"), 
+                            ("七言绝句 (28字)", "qiyan"), 
+                            ("和歌 (Waka)", "waka"), 
+                            ("俳句 (Haiku)", "haiku"), 
+                            ("题跋 (散文)", "tiba")
+                        ],
+                        value="auto", 
+                        label="题词体裁 (Format)"
+                    )
+
+                    inscription_position_dd = gr.Dropdown(
+                        choices=[
+                            ("右上题诗 (Top Right)", "top_right"), 
+                            ("左下落款 (Bottom Left)", "bottom_left"), 
+                            ("左上角 (Top Left)", "top_left")
+                        ],
+                        value="top_right", 
+                        label="题词位置 (Position)"
+                    )
+                    # 👆👆 新增结束 👆👆
+                    
                     use_appraise_cb = gr.Checkbox(label="生成后 AI 自动鉴赏 (BLIP)", value=False)
                 
                 generate_btn = gr.Button("🎨 开始生成", variant="primary", size="lg")
@@ -330,7 +357,8 @@ class ArtForgeApp:
                 lora_dd, lora_weight,
                 steps_slider, cfg_slider, seed_input, count_slider,
                 use_aging_cb, aging_strength, aging_texture, 
-                use_inscription_cb, use_seal_cb, use_watermark_cb,
+                use_inscription_cb, , inscription_format_dd, inscription_position_dd, 
+                use_seal_cb, use_watermark_cb,
                 inscription_language_dd, use_appraise_cb
             ],
             outputs=[output_image, output_info]  # 🔥 严格对应 2 个输出
@@ -601,7 +629,9 @@ class ArtForgeApp:
 
     def _generate_image(self, engine_mode, api_provider, model_name, category, preset_name, composition, 
                         prompt, negative, lora_name, lora_weight, steps, cfg, seed, count,
-                        use_aging,aging_strength, aging_texture,use_inscription, use_seal, use_watermark, inscription_lang, use_appraise):
+                        use_aging,aging_strength, aging_texture,
+                        use_inscription, inscription_format, inscription_position, 
+                        use_seal, use_watermark, inscription_lang, use_appraise):
         """统一生成入口 (严格返回 2 个值)"""
         try:
             log = [f"🚀 开始生成任务...", f"📂 分类: {category} | 预设: {preset_name}"]
@@ -753,13 +783,26 @@ class ArtForgeApp:
                 try:
                     from forgecore.post_process.inscription_generator import InscriptionGenerator
                     ig = InscriptionGenerator()
-                    text, _ = ig.generate(theme=theme, format="auto", return_meta=True, language=lang if lang != "auto" else None)
+                    # 1. 使用 UI 传来的体裁 (format)
+                    text, _ = ig.generate(
+                        theme=theme, 
+                        format=inscription_format, #  动态参数
+                        return_meta=True, 
+                        language=inscription_lang if inscription_lang != "auto" else None
+                    )
                     if text:
                         w, h = image.size
                         renderer = InscriptionRenderer()
-                        image = renderer.render(image, text, font_size=max(24, int(min(w, h) * 0.045)), position="top_right")
-                        log.append(f"🖌️ 题词完成 ({lang}): {text}")
-                except Exception as e: log.append(f"⚠️ 题词失败: {e}")
+                        
+                        # 2. 使用 UI 传来的位置 (position)
+                        image = renderer.render(
+                            image, text, 
+                            font_size=max(24, int(min(w, h) * 0.045)), 
+                            position=inscription_position #  动态参数
+                        )
+                        log.append(f"🖌️ 题词完成 [{inscription_format} @ {inscription_position}]: {text[:20]}...")
+                except Exception as e: 
+                    log.append(f"⚠️ 题词失败: {e}")
                 
             # 3. 印章
             if use_seal:
