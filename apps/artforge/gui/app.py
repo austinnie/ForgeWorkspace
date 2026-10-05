@@ -288,6 +288,10 @@ class ArtForgeApp:
                     # 5. 其他/实验性功能 (剩下的低频选项)
                     with gr.Row():
                         use_watermark_cb = gr.Checkbox(label="隐形水印", value=False, scale=1)
+                        # 👇 新增：同时保存无水印原图 👇
+                        save_clean_copy_cb = gr.Checkbox(label="同时保存无水印留底版 (自己收藏)", value=False)
+                        # 👆 新增结束 👆
+
                         use_appraise_cb = gr.Checkbox(label="AI 自动鉴赏 (BLIP)", value=False, scale=1)
                         
                 # 生成按钮 (保留原位)
@@ -367,7 +371,7 @@ class ArtForgeApp:
                 use_aging_cb, aging_strength, aging_texture, 
                 use_inscription_cb, inscription_format_dd, inscription_position_dd, 
                 use_library_only_cb,
-                use_seal_cb, use_watermark_cb,
+                use_seal_cb, use_watermark_cb,save_clean_copy_cb, 
                 inscription_language_dd, use_appraise_cb
             ],
             outputs=[output_image, output_info]  # 🔥 严格对应 2 个输出
@@ -641,7 +645,7 @@ class ArtForgeApp:
                         use_aging,aging_strength, aging_texture,
                         use_inscription, inscription_format, inscription_position, 
                         use_library_only,
-                        use_seal, use_watermark, inscription_lang, use_appraise):
+                        use_seal, use_watermark, save_clean_copy,inscription_lang, use_appraise):
         """统一生成入口 (严格返回 2 个值)"""
         try:
             log = [f"🚀 开始生成任务...", f"📂 分类: {category} | 预设: {preset_name}"]
@@ -671,21 +675,33 @@ class ArtForgeApp:
             
             # 3. 后期处理流水线 (参数严格对齐)
             if ARTFORGE_CORE_AVAILABLE:
-                final_image = self._apply_post_process(
+                final_image, clean_image = self._apply_post_process(
                     final_image, composition,
                     use_aging, aging_strength, aging_texture,
                     use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
-                    use_seal, use_watermark,
+                    use_seal, use_watermark, save_clean_copy,
                     category, log
                 )
+            else:
+                clean_image = None                
                 
-            # 4. 保存
+            # 4. 保存 (双轨保存)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             save_dir = Paths.OUTPUT_DIR if FORGE_CORE_AVAILABLE else APP_ROOT / "output"
             save_dir.mkdir(parents=True, exist_ok=True)
-            save_path = save_dir / f"artforge_{timestamp}.png"
-            final_image.save(save_path)
-            log.append(f"💾 图片已保存: {save_path}")
+            #save_path = save_dir / f"artforge_{timestamp}.png"
+
+            # A. 保存主图 (带水印/完整后期)
+            if final_image:
+                main_path = save_dir / f"artforge_{timestamp}.png"
+                final_image.save(main_path)
+                log.append(f"💾 分享版已保存: {main_path}")
+            
+            # B. 保存留底图 (无水印)
+            if clean_image is not None:
+                clean_path = save_dir / f"artforge_{timestamp}_clean.png" # 加 _clean 后缀
+                clean_image.save(clean_path)
+                log.append(f" 留底版已保存: {clean_path}")
             
             return str(save_path), "\n".join(log)  # 🔥 严格返回 2 个值
             
@@ -864,7 +880,7 @@ class ArtForgeApp:
     def _apply_post_process(self, image, composition,
                             use_aging, aging_strength, aging_texture,
                             use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
-                            use_seal, use_watermark,
+                            use_seal, use_watermark,save_clean_copy, 
                             theme, log):
         """后期处理流水线 (修正顺序：先题词印章，再装裱)"""
         try:
@@ -881,7 +897,7 @@ class ArtForgeApp:
                     backend = "library" if use_library_only else "auto"
                     
                     text, _ = ig.generate(
-                        theme=theme, 
+                        theme=preset_name, 
                         format=inscription_format, 
                         return_meta=True, 
                         language=inscription_lang if inscription_lang != "auto" else None,
@@ -929,8 +945,13 @@ class ArtForgeApp:
                     log.append(f"📜 做旧完成 (纹理:{aging_texture}, 强度:{aging_strength})")
                 except Exception as e: log.append(f"⚠️ 做旧失败: {e}")
 
-            # 5. 水印
+            # 5. 水印(关键修改：在这里复制一份留底图)
+            clean_image = None
             if use_watermark:
+                # 如果用户勾选了“同时保存无水印留底版”，在加水印前复制当前状态
+                if save_clean_copy:
+                    clean_image = image.copy() 
+                    log.append("🔒 已生成无水印留底副本")            
                 try:
                     from forgecore.post_process.watermark import WatermarkProcessor
                     wp = WatermarkProcessor()
@@ -939,10 +960,11 @@ class ArtForgeApp:
                     log.append("💧 水印完成")
                 except Exception as e: log.append(f"⚠️ 水印失败: {e}")
 
-            return image
+            #  返回两个值：(最终图, 留底图)
+            return image, clean_image
         except Exception as e:
             log.append(f"❌ 后期处理整体失败: {e}")
-            return image
+            return image, None
         
     def _build_config_tab(self):
         with gr.Group():
