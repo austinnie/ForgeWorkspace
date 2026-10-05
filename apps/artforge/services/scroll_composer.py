@@ -154,10 +154,10 @@ class ScrollComposer:
         artwork: Image.Image,
         ling_color: Tuple[int, int, int] = MountColors.LING_BEIGE,
         zhou_color: Tuple[int, int, int] = MountColors.ZHOU_WOOD,
-        top_ratio: float = 0.15,       # 天头占比
-        bottom_ratio: float = 0.25,    # 地头占比
-        side_ratio: float = 0.08,      # 左右边占比
-        jingyan: bool = True,          # 加惊燕带
+        top_ratio: float = 0.06, # 天头占比 (原 0.15 -> 改小)
+        bottom_ratio: float = 0.10, # 地头占比 (原 0.25 -> 改小)
+        side_ratio: float = 0.03, # 左右边占比 (原 0.08 -> 改小)
+        jingyan: bool = True, # 加惊燕带
     ) -> Image.Image:
         """
         立轴装裱：天头 + 地头 + 左右绫边 + 上下木轴 + 惊燕带
@@ -228,60 +228,58 @@ class ScrollComposer:
     def compose_horizontal_scroll(
         self,
         artwork: Image.Image,
-        yinshou: bool = True,      # 加引首纸
-        tuowei: bool = True,       # 加拖尾纸
+        yinshou: bool = True, # 加引首纸
+        tuowei: bool = True, # 加拖尾纸
         paper_color: Tuple[int, int, int] = MountColors.YINSHOU_PAPER,
     ) -> Image.Image:
         """
-        横卷装裱：天头 + 引首 + 画心 + 拖尾 + 地头
+        横卷装：天头 + 引首 + 画心 + 拖尾 + 地头
         横向拼接，整体高度一致
         """
         aw, ah = artwork.size
-        # 各段宽度（按画心比例）
-        tiantou_w = int(aw * 0.25)
-        yinshou_w = int(aw * 0.35) if yinshou else 0
-        tuowei_w = int(aw * 0.6) if tuowei else 0
-        ditou_w = int(aw * 0.2)
-
+        
+        # ✅ 核心修改：大幅缩小各段宽度比例，让画心占据主导
+        # 原比例：天头 0.25, 引首 0.35, 拖尾 0.6, 地头 0.2 (总和 1.4，比画心还宽)
+        # 新比例：天头 0.05, 引首 0.15, 拖尾 0.25, 地头 0.05 (总和 0.5，画心占 2/3)
+        tiantou_w = int(aw * 0.05)
+        yinshou_w = int(aw * 0.15) if yinshou else 0
+        tuowei_w = int(aw * 0.25) if tuowei else 0
+        ditou_w = int(aw * 0.05)
+        
         total_w = tiantou_w + yinshou_w + aw + tuowei_w + ditou_w
         total_h = ah
-
+        
         canvas = Image.new("RGB", (total_w, total_h), paper_color)
         draw = ImageDraw.Draw(canvas)
-
+        
         x = 0
         # 天头
         tiantou_tex = _make_paper_texture(tiantou_w, total_h, MountColors.YINSHOU_PAPER, self.seed)
         canvas.paste(tiantou_tex, (x, 0))
         x += tiantou_w
-
+        
         # 引首（略深色的纸，可题写卷名）
         if yinshou:
-            ys_tex = _make_paper_texture(yinshou_w, total_h, MountColors.LING_DARK, self.seed)
-            canvas.paste(ys_tex, (x, 0))
-            # 引首与画心间细线
-            draw.line([(x + yinshou_w, 0), (x + yinshou_w, total_h)],
-                      fill=MountColors.ZHOU_WOOD, width=2)
+            yinshou_tex = _make_paper_texture(yinshou_w, total_h, MountColors.TUOWEI_PAPER, self.seed)
+            canvas.paste(yinshou_tex, (x, 0))
             x += yinshou_w
-
+            
         # 画心
         canvas.paste(artwork, (x, 0))
-        draw.rectangle([x, 0, x + aw, total_h], outline=MountColors.ZHOU_WOOD, width=2)
         x += aw
-
-        # 拖尾（用于后人题跋）
+        
+        # 拖尾
         if tuowei:
-            tw_tex = _make_paper_texture(tuowei_w, total_h, MountColors.TUOWEI_PAPER, self.seed)
-            canvas.paste(tw_tex, (x, 0))
-            draw.line([(x, 0), (x, total_h)], fill=MountColors.ZHOU_WOOD, width=2)
+            tuowei_tex = _make_paper_texture(tuowei_w, total_h, MountColors.TUOWEI_PAPER, self.seed)
+            canvas.paste(tuowei_tex, (x, 0))
             x += tuowei_w
-
+            
         # 地头
         ditou_tex = _make_paper_texture(ditou_w, total_h, MountColors.YINSHOU_PAPER, self.seed)
         canvas.paste(ditou_tex, (x, 0))
-
+        
         return canvas
-
+        
     # ---------- 屏风（多扇） ----------
     def compose_byobu(
         self,
@@ -291,111 +289,156 @@ class ScrollComposer:
         gold_edge: bool = True,
     ) -> Image.Image:
         """
-        屏风装裱：多扇画面 + 木框 + 金箔边
-        artworks: 每扇的画面（数量应等于 n_panels，不足则循环复用）
+        屏风装裱：
+        - 模式 A (单图): 将一幅图横向切分为 n_panels 份，模拟长卷屏风
+        - 模式 B (多图): 多幅画拼接
         """
         if not artworks:
             raise ValueError("至少需要一张画面")
 
-        # 统一到相同尺寸
+        # ==========================================
+        # 模式 A：单图切分 (模拟一幅长画装在屏风上)
+        # ==========================================
+        if len(artworks) == 1 and n_panels > 1:
+            art = artworks[0]
+            aw, ah = art.size
+            
+            # 将原图横向均分为 n_panels 份
+            panel_w = aw // n_panels
+            panel_h = ah
+            
+            # 框宽和间隙 (稍微细一点，因为扇面变窄了)
+            frame_w = max(6, panel_w // 15) 
+            gap_w = max(2, frame_w // 3)
+            
+            total_w = n_panels * panel_w + (n_panels + 1) * frame_w + (n_panels - 1) * gap_w
+            total_h = panel_h + 2 * frame_w
+            
+            canvas = Image.new("RGB", (total_w, total_h), frame_color)
+            draw = ImageDraw.Draw(canvas)
+            
+            # 画木纹底
+            wood_tex = _make_wood_texture(total_w, total_h, frame_color, self.seed)
+            canvas.paste(wood_tex)
+            
+            x = frame_w
+            for i in range(n_panels):
+                # 1. 切图
+                left = i * panel_w
+                right = left + panel_w
+                # 确保不越界
+                if right > aw: right = aw
+                
+                panel_img = art.crop((left, 0, right, ah))
+                panel_img = panel_img.resize((panel_w, panel_h), Image.Resampling.LANCZOS)
+                
+                # 2. 贴金箔边 (如果有)
+                if gold_edge:
+                    gold_w = max(2, frame_w // 3)
+                    draw.rectangle(
+                        [x - gold_w, frame_w - gold_w, x + panel_w + gold_w, frame_w + panel_h + gold_w],
+                        fill=MountColors.BYOBU_GOLD,
+                    )
+                
+                # 3. 贴画面
+                canvas.paste(panel_img, (x, frame_w))
+                
+                # 4. 画扇面边框
+                draw.rectangle(
+                    [x, frame_w, x + panel_w, frame_w + panel_h],
+                    outline=MountColors.ZHOU_WOOD, width=2
+                )
+                
+                x += panel_w + frame_w + gap_w
+                
+            return canvas
+
+        # ==========================================
+        # 模式 B：多图拼接 (原逻辑，保持不变)
+        # ==========================================
         panel_w, panel_h = artworks[0].size
         for a in artworks:
             if a.size != (panel_w, panel_h):
                 a = a.resize((panel_w, panel_h), Image.Resampling.LANCZOS)
-
-        # 框宽
+                
         frame_w = max(8, panel_w // 40)
         gap_w = max(4, frame_w // 2)
-
         total_w = n_panels * panel_w + (n_panels + 1) * frame_w + (n_panels - 1) * gap_w
         total_h = panel_h + 2 * frame_w
-
         canvas = Image.new("RGB", (total_w, total_h), frame_color)
         draw = ImageDraw.Draw(canvas)
-
-        # 木纹底
-        frame_tex = _make_wood_texture(total_w, total_h, frame_color, self.seed, vertical=False)
-        canvas.paste(frame_tex)
-
+        
+        wood_tex = _make_wood_texture(total_w, total_h, frame_color, self.seed)
+        canvas.paste(wood_tex)
+        
         x = frame_w
-        for i in range(n_panels):
-            art = artworks[i % len(artworks)]
-            # 金箔边（内圈）
+        for i, art in enumerate(artworks[:n_panels]):
             if gold_edge:
-                gold_w = max(2, frame_w // 3)
+                gold_w = max(3, frame_w // 3)
                 draw.rectangle(
-                    [x - gold_w, frame_w - gold_w,
-                     x + panel_w + gold_w, frame_w + panel_h + gold_w],
+                    [x - gold_w, frame_w - gold_w, x + panel_w + gold_w, frame_w + panel_h + gold_w],
                     fill=MountColors.BYOBU_GOLD,
                 )
             canvas.paste(art, (x, frame_w))
+            draw.rectangle(
+                [x, frame_w, x + panel_w, frame_w + panel_h],
+                outline=MountColors.ZHOU_WOOD, width=2
+            )
             x += panel_w + frame_w + gap_w
-
+            
         return canvas
-
+        
     # ---------- 团扇（圆形） ----------
     def compose_fan(
         self,
         artwork: Image.Image,
-        handle_color: Tuple[int, int, int] = MountColors.FAN_HANDLE,
-        show_handle: bool = True,
+        ling_color: Tuple[int, int, int] = MountColors.LING_BEIGE,
+        zhou_color: Tuple[int, int, int] = MountColors.ZHOU_WOOD,
     ) -> Image.Image:
-        """
-        团扇装裱：圆形画面 + 扇柄
-        """
-        aw, ah = artwork.size
-        # 圆形直径取短边
-        diameter = min(aw, ah)
-        # 扇柄长度
-        handle_len = int(diameter * 0.8) if show_handle else 0
-        handle_w = max(10, diameter // 25)
-
-        # 画布尺寸
-        canvas_w = diameter + 40
-        canvas_h = diameter + handle_len + 20
-
-        canvas = Image.new("RGBA", (canvas_w, canvas_h), (255, 255, 255, 0))
-        draw = ImageDraw.Draw(canvas)
-
-        # 扇柄（先画，被扇面覆盖一部分）
-        if show_handle:
-            hx = canvas_w // 2
-            hy_start = diameter + 10
-            hy_end = hy_start + handle_len
-            # 木纹柄
-            handle_img = _make_wood_texture(handle_w, handle_len, handle_color, self.seed)
-            handle_img = handle_img.convert("RGBA")
-            canvas.paste(handle_img, (hx - handle_w // 2, hy_start), handle_img)
-
-        # 圆形裁切画心
-        cx, cy = canvas_w // 2, diameter // 2 + 10
-        mask = Image.new("L", (diameter, diameter), 0)
-        mask_draw = ImageDraw.Draw(mask)
-        mask_draw.ellipse([0, 0, diameter, diameter], fill=255)
-
-        # 裁切
-        art_sq = artwork.copy()
-        # 居中裁切为正方形
-        if aw > ah:
-            left = (aw - ah) // 2
-            art_sq = art_sq.crop((left, 0, left + ah, ah))
-        elif ah > aw:
-            top = (ah - aw) // 2
-            art_sq = art_sq.crop((0, top, aw, top + aw))
-        art_sq = art_sq.resize((diameter, diameter), Image.Resampling.LANCZOS)
-
-        art_rgba = art_sq.convert("RGBA")
-        canvas.paste(art_rgba, (cx - diameter // 2, cy - diameter // 2), mask)
-
-        # 扇边（竹圈）
-        draw = ImageDraw.Draw(canvas)
-        draw.ellipse(
-            [cx - diameter // 2, cy - diameter // 2,
-             cx + diameter // 2, cy + diameter // 2],
-            outline=MountColors.FAN_RIB, width=max(3, diameter // 80),
+        """团扇装裱 (优化版：去长柄，大扇面)"""
+        # 1. 创建正方形画布 (1:1 比例)
+        # 假设我们希望输出 1024x1024 的高清图
+        size = 1024 
+        canvas = Image.new('RGBA', (size, size), color=ling_color)
+        
+        # 2. 计算扇面大小 (留出一点边距作为装饰)
+        # 边距设为 5%，让扇面占 90%
+        margin = int(size * 0.05)
+        art_size = size - 2 * margin
+        
+        # 3. 调整画心大小
+        # 强制把画心变成正方形，以便放入圆形蒙版
+        artwork_square = artwork.resize((art_size, art_size), Image.LANCZOS)
+        
+        # 4. 创建圆形蒙版 (让画心变圆)
+        mask = Image.new('L', (art_size, art_size), 0)
+        draw_mask = ImageDraw.Draw(mask)
+        # 画一个白色的圆，作为蒙版
+        draw_mask.ellipse((0, 0, art_size, art_size), fill=255)
+        
+        # 5. 将画心贴到透明图层上
+        art_layer = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        art_layer.paste(artwork_square, (margin, margin), mask)
+        
+        # 6. 合并画心和背景
+        canvas = Image.alpha_composite(canvas, art_layer)
+        
+        # 7. 画一个精致的边框 (模拟扇骨或装饰边)
+        draw_canvas = ImageDraw.Draw(canvas)
+        # 外圈粗边框 (木色)
+        draw_canvas.ellipse(
+            (margin - 10, margin - 10, size - margin + 10, size - margin + 10), 
+            outline=zhou_color, 
+            width=8
         )
-
-        return canvas.convert("RGB")
+        # 内圈细边框 (金色或深色)
+        draw_canvas.ellipse(
+            (margin - 2, margin - 2, size - margin + 2, size - margin + 2), 
+            outline=(100, 100, 100, 255), 
+            width=2
+        )
+        
+        return canvas
 
     # ---------- 册页（多页组合） ----------
     def compose_album(
