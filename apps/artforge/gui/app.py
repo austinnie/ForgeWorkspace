@@ -17,6 +17,39 @@ WATERMARK_TEXT = "东方艺术"       # 水印文字
 ARTIST_NAME = "东方艺术"          # 艺术家/品牌名称 (用于印章等)
 
 # ============================================================
+# 📜 题词主题映射表
+# 作用：把 UI 传来的英文 preset_name/category 映射到题词库(LIBRARY)中存在的中文主题
+# ============================================================
+INSCRIPTION_THEME_MAP = {
+    # 1. 美人/人物/室内类 -> 通用
+    "bijin_ga": "通用",
+    "art_nude": "通用",
+    "shunga": "通用",
+    "figure": "通用",
+    "costume": "通用",
+    "architecture": "通用",
+    "landscape": "通用",
+    "mountain": "通用",
+    "water": "通用",
+    "bridge": "通用", # 对应你刚才报错的“桥梁”
+    
+    # 2. 妖怪/神话类 -> 天狗 (或其他对应主题)
+    "tengu": "天狗",
+    "yokai": "天狗",
+    "oni": "天狗",
+    "kitsune": "天狗",
+    "kappa": "河童",
+    
+    # 3. 敦煌/飞天类 -> 飞天
+    "dunhuang": "飞天",
+    "feitian": "飞天",
+    "tang_beauty": "飞天",
+    
+    # 4. 默认兜底 (如果上面的都没匹配到，就用"通用")
+    "default": "通用",
+}
+
+# ============================================================
 # 1. 路径注入与依赖导入
 # ============================================================
 APP_ROOT = Path(__file__).resolve().parents[1]
@@ -688,7 +721,7 @@ class ArtForgeApp:
                     use_aging, aging_strength, aging_texture,
                     use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
                     use_seal, use_watermark, save_clean_copy,
-                    category, log
+                    preset_name, category, log
                 )
             else:
                 clean_image = None                
@@ -809,7 +842,7 @@ class ArtForgeApp:
                             use_aging, aging_strength, aging_texture,
                             use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
                             use_seal, use_watermark,save_clean_copy, 
-                            theme, log):
+                            preset_name,category, log):
         """后期处理流水线 (修正顺序：先题词印章，再装裱)"""
         try:
             from PIL import Image
@@ -823,9 +856,16 @@ class ArtForgeApp:
                     
                     ig = InscriptionGenerator()
                     backend = "library" if use_library_only else "auto"
+
+                    #  核心修复：通过映射表获取真实的题词主题
+                    # 优先匹配 preset_name，其次 category，最后兜底 "通用"
+                    final_theme = INSCRIPTION_THEME_MAP.get(
+                        preset_name, 
+                        INSCRIPTION_THEME_MAP.get(category, "通用")
+                    )
                     
                     text, _ = ig.generate(
-                        theme=preset_name, 
+                        theme=final_theme,  #  使用映射后的主题（如 "通用"）
                         format=inscription_format, 
                         return_meta=True, 
                         language=inscription_lang if inscription_lang != "auto" else None,
@@ -841,7 +881,10 @@ class ArtForgeApp:
                             position=inscription_position
                         )
                         log.append(f"️ 题词完成 [{inscription_format} @ {inscription_position}] (模式:{backend})")
-                except Exception as e: log.append(f"️ 题词失败: {e}")
+                    else:
+                        log.append("⚠️ 题词生成结果为空")
+                except Exception as e: 
+                    log.append(f"⚠️ 题词失败: {e}")
 
             # 2. 印章 (盖在画心上)
             if use_seal:
