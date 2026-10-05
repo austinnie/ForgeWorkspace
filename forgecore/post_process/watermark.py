@@ -126,7 +126,7 @@ if __name__ == "__main__":
     d.rectangle([0, 400, 800, 800], fill=(60, 40, 30))   # 深色块
 
     wp = WatermarkProcessor(seed=42)
-    result = wp.add_subtle_watermark(test_img, "東方藝術", opacity=80)
+    result = wp.add_subtle_watermark(test_img, "东方艺术", opacity=80)
     out = PROJECT_ROOT / "output" / "tmp" / "watermark_test.png"
     out.parent.mkdir(exist_ok=True, parents=True)
     result.convert("RGB").save(out)

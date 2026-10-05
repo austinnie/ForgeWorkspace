@@ -35,51 +35,42 @@ from PIL import Image, ImageDraw, ImageFont
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:      # ← 新增
     sys.path.insert(0, str(PROJECT_ROOT))  # ← 新增
-    
-
-FONT_DIR = PROJECT_ROOT / "assets" / "fonts"
-
-FONT_CANDIDATES = [
-    FONT_DIR / "Mini_zhuan.ttf",          # 项目自带篆书（推荐）
-    FONT_DIR / "kai.ttf",
-    FONT_DIR / "hanyi_shangwei.ttf",
-    Path("C:/Windows/Fonts/simkai.ttf"),
-    Path("C:/Windows/Fonts/simsun.ttc"),
-    Path("C:/Windows/Fonts/msyh.ttc"),
-    Path("C:/Windows/Fonts/simhei.ttf"),
-    Path("/System/Library/Fonts/PingFang.ttc"),
-    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-]
 
 CINNABAR = (196, 30, 58, 255)     # 朱砂红
 PAPER = (252, 250, 240, 255)      # 宣纸白
 TRANSPARENT = (0, 0, 0, 0)
 
 
-# ============================================================
-# SealGenerator
-# ============================================================
+# 1. 在项目根目录基础上，优先查找 shared_assets/fonts 目录
+SHARED_ASSETS_DIR = PROJECT_ROOT.parent / "shared_assets" / "fonts" if PROJECT_ROOT else None
+
+FONT_CANDIDATES = [
+    SHARED_ASSETS_DIR / "Mini_zhuan.ttf",  #  新增：项目自带小篆（最高优先级）
+    SHARED_ASSETS_DIR / "kaiti.ttf",       #  新增：项目自带楷体备用
+    Path("C:/Windows/Fonts/simkai.ttf"),   # Windows 系统楷体
+    Path("C:/Windows/Fonts/simsun.ttc"),   # Windows 系统宋体
+    Path("/System/Library/Fonts/PingFang.ttc"), # macOS 苹方
+    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"), # Linux
+]
 
 class SealGenerator:
     """印章生成器"""
-
     def __init__(self, font_path: Optional[Union[str, Path]] = None):
         self.font_path = self._resolve_font(font_path)
 
-    # ---------- 字体 ----------
-
-    # ---------- 字体 ----------
-
+    # - 字体解析 -
     def _resolve_font(self, font_path) -> Optional[Path]:
         if font_path:
             p = Path(font_path)
             if p.exists():
                 return p
-            print(f"   ⚠️ 指定字体不存在: {p}")
+            print(f" ⚠️ 指定字体不存在: {p}")
+            
         for p in FONT_CANDIDATES:
-            if p.exists():
+            if p and p.exists():
                 return p
-        print("   ⚠️ 未找到中文字体，将用 Pillow 默认字体")
+                
+        print(" ⚠️ 未找到中文字体，将用 Pillow 默认字体")
         return None
 
     @staticmethod
@@ -87,8 +78,7 @@ class SealGenerator:
         """检查字体是否包含 text 中每个字符的字形"""
         try:
             for ch in text:
-                if ch.isspace():
-                    continue
+                if ch.isspace(): continue
                 mask = font.getmask(ch)
                 if mask.size[0] <= 1 or mask.size[1] <= 1:
                     return False
@@ -97,40 +87,27 @@ class SealGenerator:
             return False
 
     def _load_font(self, size: int) -> ImageFont.FreeTypeFont:
-        """
-        加载字体（带缺字检测）：
-        1. 优先小篆（Mini_zhuan.ttf），但检测缺字时 fallback
-        2. 再尝试 __init__ 指定的字体
-        3. 最后系统字体
-        """
-        # 1. 小篆优先，但要检查「」四字是否都支持
-        zhuan_font = PROJECT_ROOT / "assets" / "fonts" / "Mini_zhuan.ttf"
-        if zhuan_font.exists():
-            try:
-                f = ImageFont.truetype(str(zhuan_font), size)
-                if self._has_all_glyphs(f, "东方艺术"):
-                    return f
-                else:
-                    print(f"   ⚠️ 小篆字体缺字，回退系统字体")
-            except Exception as e:
-                print(f"   ⚠️ 小篆字体加载失败: {e}，回退系统字体")
-
-        # 2. __init__ 指定的字体
+        """加载字体，优先使用小篆"""
+        # 1. 如果初始化时指定了字体（通常是小篆），且存在，直接使用！
+        #    （跳过 _has_all_glyphs 检测，防止因繁简差异被误杀）
         if self.font_path and Path(self.font_path).exists():
             try:
                 return ImageFont.truetype(str(self.font_path), size)
             except Exception:
                 pass
 
-        # 3. 系统字体兜底（按优先级）
+        # 2. 如果没指定或加载失败，按优先级尝试系统字体
         for p in FONT_CANDIDATES:
-            if p.exists():
+            if p and p.exists():
                 try:
-                    return ImageFont.truetype(str(p), size)
+                    f = ImageFont.truetype(str(p), size)
+                    # 系统字体才需要检测缺字
+                    if self._has_all_glyphs(f, "东方艺术"):
+                        return f
                 except Exception:
                     continue
 
-        # 4. Pillow 默认
+        # 3. 兜底：Pillow 默认字体
         return ImageFont.load_default()
 
     # ---------- 排版：把文字拆成行列 ----------
@@ -714,6 +691,9 @@ class SealGenerator:
         Returns:
             合成后的画布
         """
+        if scheme == "default":
+            scheme = "contrast"
+        
         if scheme not in self.SIGNATURE_SCHEMES:
             print(f"   ⚠️ 未知印章方案 '{scheme}'，使用 contrast")
             scheme = "contrast"
@@ -779,7 +759,11 @@ if __name__ == "__main__":
     print("  SealGenerator 自检 — 东方艺术 品牌印章全套")
     print("=" * 70)
 
-    zhuan_font = PROJECT_ROOT / "assets" / "fonts" / "Mini_zhuan.ttf"
+    zhuan_font = PROJECT_ROOT.parent / "shared_assets" / "fonts" / "Mini_zhuan.ttf"
+    # 如果上面找不到，再尝试旧路径作为兜底
+    if not zhuan_font.exists():
+        zhuan_font = PROJECT_ROOT / "assets" / "fonts" / "Mini_zhuan.ttf"
+    
     sg = SealGenerator(font_path=zhuan_font if zhuan_font.exists() else None)
     print(f"\n🔍 字体: {sg.font_path or '默认字体'}")
 
