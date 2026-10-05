@@ -11,6 +11,12 @@ from typing import Dict, List, Any, Optional
 from PIL import Image
 
 # ============================================================
+# 🎨 个性化配置 (可在此处修改全局默认值)
+# ============================================================
+WATERMARK_TEXT = "东方艺术"       # 水印文字
+ARTIST_NAME = "东方艺术"          # 艺术家/品牌名称 (用于印章等)
+
+# ============================================================
 # 1. 路径注入与依赖导入
 # ============================================================
 APP_ROOT = Path(__file__).resolve().parents[1]
@@ -299,7 +305,9 @@ class ArtForgeApp:
             
             # 右侧输出列 (保留原位，绝对不丢)
             with gr.Column(scale=2):
-                output_image = gr.Image(label="生成结果", type="filepath", height=700)
+                output_image = gr.Image(label="生成结果 (分享版)", type="filepath", height=700)
+                # 👇 新增：留底版展示框 👇
+                output_image_clean = gr.Image(label="无水印留底版 (自己收藏)", type="filepath", height=700, visible=False) # 默认隐藏，有图时再显示                
                 output_info = gr.Textbox(label="执行日志", lines=12)
 
         # ========== 事件绑定 ==========
@@ -374,7 +382,7 @@ class ArtForgeApp:
                 use_seal_cb, use_watermark_cb,save_clean_copy_cb, 
                 inscription_language_dd, use_appraise_cb
             ],
-            outputs=[output_image, output_info]  # 🔥 严格对应 2 个输出
+            outputs=[output_image, output_image_clean, output_info]  # 🔥 严格对应 3 个输出
         )
 
     def _build_img2img_tab(self):
@@ -689,25 +697,32 @@ class ArtForgeApp:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             save_dir = Paths.OUTPUT_DIR if FORGE_CORE_AVAILABLE else APP_ROOT / "output"
             save_dir.mkdir(parents=True, exist_ok=True)
-            #save_path = save_dir / f"artforge_{timestamp}.png"
-
+            
+            main_path = None
+            clean_path = None #  必须初始化，防止下面没赋值导致报错
+            
             # A. 保存主图 (带水印/完整后期)
             if final_image:
                 main_path = save_dir / f"artforge_{timestamp}.png"
                 final_image.save(main_path)
                 log.append(f"💾 分享版已保存: {main_path}")
-            
+                
             # B. 保存留底图 (无水印)
             if clean_image is not None:
-                clean_path = save_dir / f"artforge_{timestamp}_clean.png" # 加 _clean 后缀
+                clean_path = save_dir / f"artforge_{timestamp}_clean.png"
                 clean_image.save(clean_path)
-                log.append(f" 留底版已保存: {clean_path}")
-            
-            return str(save_path), "\n".join(log)  # 🔥 严格返回 2 个值
+                log.append(f"🔒 留底版已保存: {clean_path}")
+                
+            #  返回 3 个值，严格匹配 outputs=[output_image, output_image_clean, output_info]
+            return (
+                str(main_path) if main_path else None, 
+                str(clean_path) if clean_path else None, 
+                "\n".join(log)
+            )
             
         except Exception as e:
             import traceback
-            return None, f"❌ 生成崩溃: {str(e)}\n\n{traceback.format_exc()}"  # 🔥 严格返回 2 个值
+            return None, f"❌ 生成崩溃: {str(e)}\n\n{traceback.format_exc()}"  # 🔥 严格返回 3 个值
 
     def _generate_with_api(self, provider, prompt, negative, w, h, steps, cfg, seed):
         """API 生成 (严格返回 2 个值)"""
@@ -788,94 +803,7 @@ class ArtForgeApp:
             import traceback
             log.append(f"❌ 本地失败: {e}")
             log.append(traceback.format_exc())
-            return None, "\n".join(log)
-
-    def _apply_post_process_old(self, image, composition,
-                            use_aging, aging_strength, aging_texture,
-                            use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
-                            use_seal, use_watermark,
-                            theme, log):
-        """后期处理流水线（全参数版）"""
-        try:
-            from PIL import Image
-            if image.mode != 'RGBA': image = image.convert('RGBA')
-
-            # 1. 装裱
-            if composition and composition != "无 (仅画心)":
-                try:
-                    comp_map = {"立轴 (9:16)": "vertical", "横卷 (16:9)": "horizontal", "屏风 (4:3)": "byobu", "团扇 (1:1)": "fan"}
-                    from services.scroll_composer import ScrollComposer
-                    composer = ScrollComposer()
-                    image = composer.compose(image, comp_map.get(composition, "vertical"))
-                    log.append(f"🖼️ 装裱完成: {composition}")
-                except Exception as e: log.append(f"⚠️ 装裱失败: {e}")
-
-            # 2. 题词 (使用新参数)
-            if use_inscription:
-                try:
-                    from forgecore.post_process.inscription_generator import InscriptionGenerator
-                    from compose_artwork import InscriptionRenderer # 注意：如果这里报错，请改回 from forgecore.post_process.inscription_renderer import InscriptionRenderer
-                    
-                    ig = InscriptionGenerator()
-                    backend = "library" if use_library_only else "auto"
-                    
-                    text, _ = ig.generate(
-                        theme=theme, 
-                        format=inscription_format, 
-                        return_meta=True, 
-                        language=inscription_lang if inscription_lang != "auto" else None,
-                        backend=backend
-                    )
-                    
-                    if text:
-                        w, h = image.size
-                        renderer = InscriptionRenderer()
-                        image = renderer.render(
-                            image, text, 
-                            font_size=max(24, int(min(w, h) * 0.045)), 
-                            position=inscription_position # 这里使用了新参数，不再报错
-                        )
-                        log.append(f"🖌️ 题词完成 [{inscription_format} @ {inscription_position}]")
-                except Exception as e: 
-                    log.append(f"⚠️ 题词失败: {e}")
-
-            # 3. 印章
-            if use_seal:
-                try:
-                    from forgecore.post_process.seal_generator import SealGenerator
-                    sg = SealGenerator()
-                    image = sg.apply_scheme(image, "東方藝術", scheme="default")
-                    log.append("🔴 印章完成")
-                except Exception as e: log.append(f"⚠️ 印章失败: {e}")
-
-            # 4. 做旧 (使用新参数)
-            if use_aging:
-                try:
-                    from forgecore.post_process.aging_processor import AgingProcessor
-                    aging = AgingProcessor()
-                    tex = aging_texture if aging_texture != "none" else None
-                    image = aging.apply(image.convert("RGB"), texture=tex, strength=float(aging_strength))
-                    image = image.convert("RGBA")
-                    log.append(f" 做旧完成 (强度:{aging_strength})")
-                except Exception as e: log.append(f"⚠️ 做旧失败: {e}")
-
-            # 5. 水印
-            if use_watermark:
-                try:
-                    from forgecore.post_process.watermark import WatermarkProcessor
-                    wp = WatermarkProcessor()
-                    image = wp.add_subtle_watermark(image.convert("RGB"), "ArtForge", opacity=30)
-                    image = image.convert("RGBA")
-                    log.append("💧 水印完成")
-                except Exception as e: log.append(f"⚠️ 水印失败: {e}")
-
-            return image
-        except Exception as e:
-            log.append(f"❌ 后期处理整体失败: {e}")
-            return image
-            
-
-
+            return None, "\n".join(log)    
 
     def _apply_post_process(self, image, composition,
                             use_aging, aging_strength, aging_texture,
@@ -920,7 +848,7 @@ class ArtForgeApp:
                 try:
                     from forgecore.post_process.seal_generator import SealGenerator
                     sg = SealGenerator()
-                    image = sg.apply_scheme(image, "東方藝術", scheme="default")
+                    image = sg.apply_scheme(image, ARTIST_NAME, scheme="contrast")
                     log.append("🔴 印章完成")
                 except Exception as e: log.append(f"⚠️ 印章失败: {e}")
 
@@ -955,9 +883,9 @@ class ArtForgeApp:
                 try:
                     from forgecore.post_process.watermark import WatermarkProcessor
                     wp = WatermarkProcessor()
-                    image = wp.add_subtle_watermark(image.convert("RGB"), "ArtForge", opacity=30)
+                    image = wp.add_subtle_watermark(image.convert("RGB"), WATERMARK_TEXT, opacity=30)
                     image = image.convert("RGBA")
-                    log.append("💧 水印完成")
+                    log.append(f"💧 水印完成 (文字: {WATERMARK_TEXT})")
                 except Exception as e: log.append(f"⚠️ 水印失败: {e}")
 
             #  返回两个值：(最终图, 留底图)
