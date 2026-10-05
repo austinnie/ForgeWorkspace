@@ -690,6 +690,22 @@ class ArtForgeApp:
         """统一生成入口 (严格返回 2 个值)"""
         try:
             log = [f"🚀 开始生成任务...", f"📂 分类: {category} | 预设: {preset_name}"]
+
+            # ============================================================
+            #  新增：根据装裱方式自动调整图片尺寸
+            # ============================================================
+            SCROLL_SIZE_MAP = {
+                "立轴 (9:16)": (768, 1365),   # 竖长图
+                "横卷 (16:9)": (1365, 768),   # 横宽图
+                "屏风 (4:3)":  (1024, 768),   # 标准横图
+                "团扇 (1:1)":  (1024, 1024),  # 正方形
+                "无 (仅画心)": (768, 1024),   # 默认竖图
+            }
+            
+            # 获取目标尺寸，如果未匹配到则使用默认 768x1024
+            width, height = SCROLL_SIZE_MAP.get(composition, (768, 1024))
+            log.append(f" 检测到装裱方式 [{composition}]，自动调整生图尺寸为: {width}x{height}")
+
             
             # 1. 提示词处理
             presets = self.presets_map.get(category, [])
@@ -700,12 +716,12 @@ class ArtForgeApp:
             images = []
             if engine_mode == "api":
                 for i in range(count):
-                    img, api_log = self._generate_with_api(api_provider, full_prompt, negative, 576, 1024, steps, cfg, seed + i if seed != -1 else None)
+                    img, api_log = self._generate_with_api(api_provider, full_prompt, negative, width, height, steps, cfg, seed + i if seed != -1 else None)
                     log.extend(api_log.split('\n'))
                     if img: images.append(img)
             elif engine_mode == "local":
                 for i in range(count):
-                    img, local_log = self._generate_with_local(model_name, full_prompt, negative, 576, 1024, steps, cfg, seed + i if seed != -1 else None, lora_name, lora_weight)
+                    img, local_log = self._generate_with_local(model_name, full_prompt, negative, width, height, steps, cfg, seed + i if seed != -1 else None, lora_name, lora_weight)
                     log.extend(local_log.split('\n'))
                     if img: images.append(img)
                     
