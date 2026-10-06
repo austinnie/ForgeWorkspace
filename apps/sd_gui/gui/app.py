@@ -22,98 +22,11 @@ try:
     from forgecore.config.settings import settings
     from forgecore.engines import create_engine
     from forgecore.engines.local_engine import DiffusersEngine
+    from forgecore.templates.manager import TemplateManager
 except ImportError as e:
     print(f"❌ 无法导入 ForgeCore: {e}")
     sys.exit(1)
 
-# ==================== 增强版提示词模板管理器 ====================
-class TemplateManager:
-    """
-    多模式 JSON 解析器：自动适配各种 SD 提示词 JSON 结构
-    兼容模式：
-      A. 列表式: [{"name": "x", "prompt": "..."}]
-      B. 对象式: {"cat": {"prompt": "...", "negative": "..."}}
-      C. 键值对: {"cat": "a cute cat", "dog": "a dog"}
-      D. WebUI式: {"text": "...", "negative_text": "..."}
-      E. 嵌套式: {"category": {"item": {"prompt": "..."}}}
-    """
-    def __init__(self, project_root: Path):
-        self.template_dir = project_root / "shared_assets" / "templates" / "sd_gui"
-        self.categories = {}
-        self._load_all()
-
-    def _load_all(self):
-        if not self.template_dir.exists():
-            print(f"⚠️ 模板目录不存在：{self.template_dir}")
-            return
-        
-        # 1. 加载 prompts/ 下的分类
-        prompts_dir = self.template_dir / "prompts"
-        if prompts_dir.exists():
-            for json_file in sorted(prompts_dir.glob("*.json")):
-                self._load_and_parse(json_file)
-                
-        # 2. 加载根目录的配置 JSON
-        for json_file in sorted(self.template_dir.glob("*.json")):
-            if json_file.name in ["persons.json", "scenes.json", "relationships.json"]:
-                self._load_and_parse(json_file, prefix="[配置] ")
-        
-        print(f"✅ 已加载 {len(self.categories)} 个提示词模板分类")
-
-    def _load_and_parse(self, filepath: Path, prefix: str = ""):
-        try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
-            # 核心：使用多模式探测器解析数据
-            items = self._normalize_items(data)
-            
-            if items:
-                category_name = prefix + filepath.stem
-                # 如果分类名重复，追加数字
-                base_name = category_name
-                counter = 1
-                while category_name in self.categories:
-                    category_name = f"{base_name}_{counter}"
-                    counter += 1
-                self.categories[category_name] = items
-        except Exception as e:
-            print(f"⚠️ 加载模板失败 {filepath.name}: {e}")
-
-    def _normalize_items(self, data, parent_key="") -> list:
-        """将各种格式的 JSON 统一转换为 [{"name": "...", "prompt": "...", "negative": "..."}]"""
-        items = []
-        
-        if isinstance(data, list):
-            for item in data:
-                if isinstance(item, dict):
-                    name = item.get("name") or item.get("title") or item.get("id") or f"Item_{len(items)+1}"
-                    prompt = item.get("prompt") or item.get("positive") or item.get("text") or ""
-                    negative = item.get("negative") or item.get("negative_prompt") or item.get("negative_text") or ""
-                    items.append({"name": str(name), "prompt": str(prompt), "negative": str(negative)})
-                    
-        elif isinstance(data, dict):
-            for k, v in data.items():
-                if isinstance(v, dict):
-                    # 检查是否是包含 prompt 的对象 (模式 B)
-                    if any(key in v for key in ["prompt", "positive", "text", "negative"]):
-                        name = v.get("name") or v.get("title") or k
-                        prompt = v.get("prompt") or v.get("positive") or v.get("text") or ""
-                        negative = v.get("negative") or v.get("negative_prompt") or ""
-                        items.append({"name": str(name), "prompt": str(prompt), "negative": str(negative)})
-                    else:
-                        # 嵌套分类 (模式 E)，递归解析并将父键作为前缀
-                        sub_items = self._normalize_items(v, parent_key=k)
-                        # 给子项名字加上父分类前缀，避免混淆
-                        for sub in sub_items:
-                            sub["name"] = f"{k} - {sub['name']}"
-                        items.extend(sub_items)
-                        
-                elif isinstance(v, str):
-                    # 纯键值对 (模式 C)
-                    items.append({"name": str(k), "prompt": str(v), "negative": ""})
-                    
-        return items
 
 # ==================== 主应用类 ====================
 class SDGuiApp:
@@ -128,7 +41,9 @@ class SDGuiApp:
         self.api_providers = ["freeapi", "pollinations", "agnes", "siliconflow", "tongyi", "hunyuan"]
         
         # 初始化增强版模板管理器
-        self.template_manager = TemplateManager(PROJECT_ROOT)
+        self.template_manager = TemplateManager(
+            PROJECT_ROOT / "shared_assets" / "templates" / "sd_gui" / "prompts"
+        )
         
         self._build_ui()
         self._update_engine_visibility()
@@ -339,7 +254,7 @@ class SDGuiApp:
             preset_data = getattr(mod, "PRESET", {})
             layers = preset_data.get("layers", {})
             prompt_parts = []
-            for key in ["subject", "scene", "style", "lighting", "view", "quality"]:
+            for key in ["subject", "scene", "style", "lighting", "composition", "quality"]:
                 if key in layers and isinstance(layers[key], list):
                     prompt_parts.extend(layers[key])
             prompt = ", ".join(prompt_parts)
