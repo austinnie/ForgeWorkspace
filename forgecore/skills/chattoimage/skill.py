@@ -1564,7 +1564,13 @@ expand_to_full_body, old_photo_restore, chat
                     skill_params[key] = val.lower() in ["true", "1", "yes", "on"]
                 elif isinstance(val, (int, float)):
                     skill_params[key] = bool(val)
-
+                    
+                    
+        # 🆕 让 text_to_image 默认走 API（更快）
+        if intent == "text_to_image":
+            skill_params.setdefault('use_api', True)
+            skill_params.setdefault('api_provider', 'agnes')
+            
         return skill_params
 
     # ==================== 主执行方法 ====================
@@ -1683,19 +1689,24 @@ expand_to_full_body, old_photo_restore, chat
             # 处理结果
             image_paths = []
             if result.get("status") == "success":
-                # 提取图片路径
-                if result.get("result"):
-                    if isinstance(result["result"], dict):
-                        if "image_paths" in result["result"]:
-                            image_paths = result["result"]["image_paths"]
-                        elif "image_path" in result["result"]:
-                            image_paths = [result["result"]["image_path"]]
-                        elif "output_path" in result["result"]:
-                            image_paths = [result["result"]["output_path"]]
-                    elif isinstance(result["result"], list):
-                        image_paths = result["result"]
-                    elif isinstance(result["result"], str):
-                        image_paths = [result["result"]]
+                # 提取图片路径（递归查找嵌套结构）
+                def _extract_image_paths(obj):
+                    if not isinstance(obj, dict):
+                        return []
+                    if "image_paths" in obj and isinstance(obj["image_paths"], list):
+                        return obj["image_paths"]
+                    if "image_path" in obj and obj["image_path"]:
+                        return [obj["image_path"]]
+                    if "output_path" in obj and obj["output_path"]:
+                        return [obj["output_path"]]
+                    for v in obj.values():
+                        if isinstance(v, dict):
+                            found = _extract_image_paths(v)
+                            if found:
+                                return found
+                    return []
+
+                image_paths = _extract_image_paths(result)
             elif result.get("status") == "error":
                 return {
                     "status": "error",

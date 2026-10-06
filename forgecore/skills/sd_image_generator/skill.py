@@ -242,6 +242,76 @@ class SdImageGenerator:
             width = (width // 8) * 8
             height = (height // 8) * 8
 
+            # 🆕 提取 seed（API 和本地都用）
+            seed = kwargs.get('seed', -1)
+            if isinstance(seed, str):
+                try:
+                    seed = int(seed)
+                except:
+                    seed = -1
+            if seed == -1:
+                seed = random.randint(0, 2**32 - 1)
+                
+            # ============ API 分支（走 Agnes / Pollinations 等） ============
+            use_api = kwargs.get('use_api', False)
+            api_provider = kwargs.get('api_provider', 'agnes')
+
+            if use_api:
+                # 走 API
+                try:
+                    from forgecore.engines import create_engine
+                    from forgecore.config.paths import Paths
+                    
+                    # 从环境变量读配置
+                    import os
+                    config = {
+                        "AGNES_API_KEY": os.getenv("AGNES_API_KEY", ""),
+                        "AGNES_BASE_URL": os.getenv("AGNES_BASE_URL", "https://apihub.agnes-ai.com/v1"),
+                        "AGNES_IMAGE_MODEL": os.getenv("AGNES_IMAGE_MODEL", "agnes-image-2.1-flash"),
+                        "POLLINATIONS_API_KEY": os.getenv("POLLINATIONS_API_KEY", ""),
+                        "POLLINATIONS_MODEL": os.getenv("POLLINATIONS_MODEL", "flux"),
+                    }
+                    
+                    logger.info(f"🌐 使用 API 引擎: {api_provider}")
+                    engine = create_engine(api_provider, config=config)
+                    image = engine.generate_single(
+                        prompt=prompt, negative=negative_prompt,
+                        width=width, height=height,
+                        steps=steps, cfg=cfg_scale, seed=seed if seed != -1 else None
+                    )
+                    
+                    # 保存
+                    import time as _time
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    output_dir = Paths.OUTPUT_DIR if 'Paths' in dir() else Path('./generated_images')
+                    output_dir.mkdir(parents=True, exist_ok=True)
+                    filepath = output_dir / f"api_{timestamp}_{seed}.png"
+                    image.save(filepath)
+                    
+                    generation_time = time.time() - start_time
+                    return {
+                        "status": "success",
+                        "result": {
+                            "image_paths": [str(filepath)],
+                            "parameters": {
+                                "prompt": prompt,
+                                "api_provider": api_provider,
+                                "width": width,
+                                "height": height,
+                                "seed": seed,
+                            },
+                            "model_used": f"api:{api_provider}",
+                            "generation_time": f"{generation_time:.2f}s",
+                            "generated_at": datetime.now().isoformat()
+                        },
+                        "metadata": {"skill": self.name, "version": self.version},
+                    }
+                except Exception as e:
+                    logger.error(f"API 生成失败: {e}")
+                    return {"status": "error", "error": f"API 失败: {e}"}
+                    
+            # ============ 本地分支（走 diffusers CPU 推理） ============
+            # 加载模型        
             # 加载模型
             if self.pipeline is None or self.current_model != model_name:
                 if not self._load_model(model_name):
