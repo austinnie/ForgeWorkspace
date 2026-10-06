@@ -184,6 +184,8 @@ class ArtForgeApp:
                     self._build_img2img_tab()
                 with gr.Tab("🪄 像素魔法"):
                     self._build_pixel_magic_tab()
+                with gr.Tab("🛠️ 技能中心"):
+                    self._build_skill_hub_tab()                    
                 with gr.Tab("️ 鉴赏与排版"):
                     gr.Markdown("### 图片鉴赏与排版推送\n(功能开发中... 将接入 BLIP/LLM 进行自动鉴赏与微信排版)")
                 with gr.Tab("⚙️ 配置"):
@@ -751,6 +753,183 @@ class ArtForgeApp:
 
         magic_btn.click(fn=run_pixel_magic, inputs=[magic_skill_dd, magic_ref_image, magic_engine_mode, magic_local_model], outputs=[magic_out, magic_log])
 
+
+    def _build_skill_hub_tab(self):
+        """技能中心：统一调用 forgecore.skills 下所有 skill"""
+        import json
+        from pathlib import Path
+        from forgecore.skills.manager import skill_manager
+
+        SKILLS_DIR = Path(__file__).resolve().parents[3] / "forgecore" / "skills"
+
+        # ---------- 内部工具：读 meta.json ----------
+        def load_meta(skill_name: str) -> dict:
+            """读 skill 的 meta.json，读不到返回空 dict"""
+            meta_path = SKILLS_DIR / skill_name / "meta.json"
+            if not meta_path.exists():
+                return {}
+            try:
+                return json.loads(meta_path.read_text(encoding="utf-8"))
+            except Exception:
+                return {}
+
+        def build_default_params(meta: dict) -> dict:
+            """从 meta.inputs 生成默认参数字典"""
+            params = {}
+            for inp in meta.get("inputs", []):
+                name = inp.get("name")
+                if not name:
+                    continue
+                if "default" in inp:
+                    params[name] = inp["default"]
+                else:
+                    # 没默认值时按类型给个空值
+                    t = inp.get("type", "string")
+                    if t == "integer" or t == "number":
+                        params[name] = 0
+                    elif t == "boolean":
+                        params[name] = False
+                    else:
+                        params[name] = ""
+            return params
+
+        def format_info_md(skill_name: str, meta: dict, skill_meta: dict) -> str:
+            """生成参数说明 markdown"""
+            lines = [f"### {meta.get('name', skill_name)}"]
+            desc = meta.get("description") or skill_meta.get("description") or "(无描述)"
+            lines.append(f"\n{desc}\n")
+
+            tags = skill_meta.get("tags", [])
+            if tags:
+                lines.append(f"**标签**: `{'` `'.join(tags)}`\n")
+
+            version = meta.get("version") or skill_meta.get("version", "")
+            if version:
+                lines.append(f"**版本**: {version}\n")
+
+            inputs = meta.get("inputs", [])
+            if inputs:
+                lines.append("**参数说明**:\n")
+                for inp in inputs:
+                    req = "🟥 必填" if inp.get("required") else "⬜ 可选"
+                    name = inp.get("name", "?")
+                    typ = inp.get("type", "string")
+                    desc_i = inp.get("description", "")
+                    default = inp.get("default", "—")
+                    enum = inp.get("enum")
+                    line = f"- `{name}` ({typ}) {req} — {desc_i}"
+                    if enum:
+                        line += f" | 可选值: {enum}"
+                    line += f" | 默认: `{default}`"
+                    lines.append(line)
+            else:
+                lines.append("*(此 skill 无 meta.inputs，请自行构造参数 JSON)*")
+
+            outputs = meta.get("outputs", [])
+            if outputs:
+                lines.append("\n**输出**:\n")
+                for out in outputs:
+                    lines.append(f"- `{out.get('name', '?')}` — {out.get('description', '')}")
+
+            return "\n".join(lines)
+
+        # ---------- UI 构建 ----------
+        with gr.Row():
+            with gr.Column(scale=1):
+                # 1. 技能选择
+                all_skills = skill_manager.list_skills()
+                skill_names = sorted([s["name"] for s in all_skills])
+                skill_info_map = {s["name"]: s for s in all_skills}
+
+                skill_dd = gr.Dropdown(
+                    choices=skill_names,
+                    value=skill_names[0] if skill_names else None,
+                    label=f"选择技能 (共 {len(skill_names)} 个)",
+                    interactive=True,
+                )
+
+                # 2. 参数 JSON 输入
+                params_input = gr.Code(
+                    label="参数 (JSON)",
+                    language="json",
+                    value="{}",
+                    lines=12,
+                )
+
+                # 3. 快捷操作
+                with gr.Row():
+                    reset_btn = gr.Button("↺ 重置为默认", size="sm")
+                    run_btn = gr.Button("🚀 执行", variant="primary", size="sm")
+
+            with gr.Column(scale=1):
+                # 4. 说明面板
+                info_md = gr.Markdown("### 选择技能后显示说明")
+
+                # 5. 执行结果
+                log_output = gr.Textbox(label="日志", lines=8)
+                result_output = gr.JSON(label="结果")
+
+        # ---------- 事件：切 skill → 自动填默认参数 + 显示说明 ----------
+        def on_skill_change(skill_name):
+            meta = load_meta(skill_name)
+            skill_meta = skill_info_map.get(skill_name, {})
+
+            default_params = build_default_params(meta)
+            default_json = json.dumps(default_params, ensure_ascii=False, indent=2)
+
+            info = format_info_md(skill_name, meta, skill_meta)
+            return default_json, info
+
+        skill_dd.change(
+            fn=on_skill_change,
+            inputs=skill_dd,
+            outputs=[params_input, info_md],
+        )
+
+        # 首次加载自动填一次
+        if skill_names:
+            init_json, init_info = on_skill_change(skill_names[0])
+            params_input.value = init_json
+            info_md.value = init_info
+
+        # 重置按钮：重新填默认
+        reset_btn.click(
+            fn=on_skill_change,
+            inputs=skill_dd,
+            outputs=[params_input, info_md],
+        )
+
+        # ---------- 执行 ----------
+        def execute_skill(skill_name, json_str):
+            logs = [f"🚀 执行 skill: {skill_name}"]
+            try:
+                params = json.loads(json_str) if json_str.strip() else {}
+            except json.JSONDecodeError as e:
+                return f"❌ JSON 格式错误: {e}", {"error": str(e)}
+            except Exception as e:
+                return f"❌ 解析参数失败: {e}", {"error": str(e)}
+
+            logs.append(f"📋 参数: {json.dumps(params, ensure_ascii=False)[:200]}")
+
+            try:
+                result = skill_manager.run(skill_name, **params)
+                status = result.get("status", "unknown")
+                logs.append(f"✅ 状态: {status}")
+                if result.get("error"):
+                    logs.append(f"❌ 错误: {result['error']}")
+                return "\n".join(logs), result
+            except Exception as e:
+                import traceback
+                logs.append(f"❌ 执行异常: {e}")
+                logs.append(traceback.format_exc())
+                return "\n".join(logs), {"error": str(e)}
+
+        run_btn.click(
+            fn=execute_skill,
+            inputs=[skill_dd, params_input],
+            outputs=[log_output, result_output],
+        )
+    
     def _generate_image(self, engine_mode, api_provider, model_name, category, preset_name, composition, 
                         prompt, negative, lora_name, lora_weight, steps, cfg, seed, count,
                         use_aging,aging_strength, aging_texture,
