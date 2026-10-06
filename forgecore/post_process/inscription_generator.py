@@ -73,23 +73,29 @@ try:
 except ImportError:
     print("   ⚠️ 未安装 python-dotenv，.env 不会加载")
     
-FORMATS = ["wuyan", "qiyan", "waka", "haiku", "tiba"]
+FORMATS = ["wuyan", "qiyan", "waka", "haiku", "tiba", "sonnet", "haiku_en", "free_verse"]
 FORMAT_NAMES_CN = {
     "wuyan": "五言",
     "qiyan": "七言",
     "waka": "和歌",
     "haiku": "俳句",
     "tiba": "题跋",
+    "sonnet": "十四行诗",
+    "haiku_en": "英文俳句",
+    "free_verse": "自由诗",
     "auto": "随机",
 }
 
 # 各体裁的期望字数（用于排版参考）
 FORMAT_LENGTH = {
-    "wuyan": 20,    # 4 句 × 5 字
-    "qiyan": 28,    # 4 句 × 7 字
-    "waka": 31,     # 5-7-5-7-7
-    "haiku": 17,    # 5-7-5
-    "tiba": 40,     # 灵活
+    "wuyan": 20,
+    "qiyan": 28,
+    "waka": 31,
+    "haiku": 17,
+    "tiba": 40,
+    "sonnet": 200,      # 大约
+    "haiku_en": 60,     # 大约
+    "free_verse": 80,   # 大约
 }
 
 
@@ -639,6 +645,23 @@ class InscriptionGenerator:
         self._pollinations = None   # 懒加载
         self._cache = {}   # 🆕 (theme, fmt, context_hash) → (text, meta)
 
+    @staticmethod
+    def _normalize_language(lang) -> str:
+        """把各种输入格式规范化为: auto / chinese / japanese / english"""
+        if not lang or lang == "auto":
+            return "auto"
+        lang = str(lang).lower().strip()
+        # 去掉 " (xxx)" 后缀（兼容旧的 UI 值）
+        if " (" in lang:
+            lang = lang.split(" (")[0]
+        if lang in ("chinese", "zh"):
+            return "chinese"
+        if lang in ("japanese", "ja"):
+            return "japanese"
+        if lang in ("english", "en"):
+            return "english"
+        return "auto"
+    
     # ------------------------------------------------------------
     # 主接口
     # ------------------------------------------------------------
@@ -665,19 +688,22 @@ class InscriptionGenerator:
         Returns:
             text 或 (text, meta)
         """
+        language = self._normalize_language(language)        
         # ✅ 自动检测语言（根据分类）
         if language == "auto":
-            if category in ("gufeng", "tang"):
+            if category in ("gufeng", "tang", "nude_art", "nude_other", "landscape"):
                 language = "chinese"
             elif category in ("japanese", "yokai", "genji"):
                 language = "japanese"
             else:
-                language = "japanese"  # 兜底
+                language = "chinese"   # ← 改成 chinese
 
         # ✅ 如果 format 是 auto，根据语言选默认体裁
         if format == "auto":
             if language == "chinese":
                 format = self._rng.choice(["wuyan", "qiyan", "tiba"])
+            elif language == "english":
+                format = self._rng.choice(["sonnet", "haiku_en", "free_verse"])
             else:
                 format = self._rng.choice(["waka", "haiku", "tiba"])
 
@@ -777,6 +803,9 @@ class InscriptionGenerator:
             "waka":  "写一首和歌（5-7-5-7-7 音，共31音，用日文）",
             "haiku": "写一首俳句（5-7-5 音，共17音，用日文）",
             "tiba":  "写一段题跋（40-60字散文，文言风格）",
+            "sonnet": "write a short English poem in the style of classical Eastern poetry (4-8 lines, elegant, imagery-rich)",
+            "haiku_en": "write an English haiku (3 lines, 5-7-5 syllables)",
+            "free_verse": "write a short English free verse poem (3-6 lines) evoking the mood of the image",
         }
         spec = format_specs.get(fmt, format_specs["qiyan"])
 

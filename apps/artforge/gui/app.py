@@ -328,7 +328,12 @@ class ArtForgeApp:
                     with gr.Accordion("🖌️ 题词高级设置", open=False):
                         with gr.Row():
                             inscription_language_dd = gr.Dropdown(
-                                choices=["auto", "zh (中文)", "ja (日文)", "en (英文)"],
+                                choices=[
+                                    ("自动 (Auto)", "auto"),
+                                    ("中文 (Chinese)", "chinese"),
+                                    ("日文 (Japanese)", "japanese"),
+                                    ("英文 (English)", "english"),
+                                ],
                                 value="auto", label="题词语言", scale=1
                             )
                             inscription_format_dd = gr.Dropdown(
