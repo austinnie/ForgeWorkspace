@@ -37,15 +37,6 @@ def load_env_config() -> dict:
     return {k: os.getenv(k) for k in keys}
 
 
-def get_preset_map() -> dict:
-    """返回 {category: [preset_names]}，用于 UI 下拉。"""
-    try:
-        from core.prompt_builder import PromptBuilder
-        builder = PromptBuilder()
-        return builder.list_presets() or {}
-    except Exception as e:
-        print(f"⚠️ 加载预设失败: {e}")
-        return {}
 
 
 def get_all_themes() -> list:
