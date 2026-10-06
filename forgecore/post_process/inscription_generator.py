@@ -518,6 +518,7 @@ class InscriptionGenerator:
         return_meta: bool = False,
         category: str = "",          # ✅ 新增：主题分类
         language: str = "auto",      # ✅ 新增：强制语言（auto/chinese/japanese）
+        context: str = "",          # 🆕 新增：图片的 prompt，用于 LLM 生成贴合内容的题词
     ) -> Union[str, Tuple[str, Dict]]:
         """
         生成题词。
@@ -552,7 +553,7 @@ class InscriptionGenerator:
         fmt = self._normalize_format(format)
 
         # 2. 选 backend
-        chosen, text = self._dispatch(theme_std, fmt, backend)
+        chosen, text = self._dispatch(theme_std, fmt, backend, context)
 
         # 3. 清理文本
         text = self._clean(text)
@@ -578,6 +579,7 @@ class InscriptionGenerator:
         theme: str,
         fmt: str,
         backend: str,
+        context=""
     ) -> Tuple[str, str]:
         """
         按 backend 策略分发。返回 (source, text)。
@@ -588,13 +590,13 @@ class InscriptionGenerator:
         if backend == "library":
             return ("library", self._from_library(theme, fmt))
         if backend == "agnes":
-            txt = self._from_agnes(theme, fmt)
+            txt = self._from_agnes(theme, fmt, context)
             if txt:
                 return ("agnes", txt)
             print("   ⚠️ Agnes 生成失败，降级到 library")
             return ("library", self._from_library(theme, fmt))
         if backend == "pollinations":
-            txt = self._from_pollinations(theme, fmt)
+            txt = self._from_pollinations(theme, fmt, context)
             if txt:
                 return ("pollinations", txt)
             print("   ⚠️ Pollinations 生成失败，降级到 library")
@@ -602,30 +604,60 @@ class InscriptionGenerator:
 
         # auto：agnes → pollinations → library
         if backend == "auto":
-            txt = self._from_agnes(theme, fmt)
+            txt = self._from_agnes(theme, fmt, context)
             if txt:
                 return ("agnes", txt)
-            txt = self._from_pollinations(theme, fmt)
+            txt = self._from_pollinations(theme, fmt, context)
             if txt:
                 return ("pollinations", txt)
             return ("library", self._from_library(theme, fmt))
 
         print(f"   ⚠️ 未知 backend '{backend}'，使用 auto")
-        return self._dispatch(theme, fmt, "auto")
+        return self._dispatch(theme, fmt, "auto", context)
 
+
+    def _build_prompt_with_context(
+        self, theme: str, fmt: str, context: str
+    ) -> str:
+        """根据图片内容（prompt）+ 主题构建 LLM 提示词。"""
+        context = context.strip()
+        if len(context) > 400:
+            context = context[:400] + "..."
+
+        format_specs = {
+            "wuyan": "写一首五言绝句（4句，每句5字，共20字）",
+            "qiyan": "写一首七言绝句（4句，每句7字，共28字）",
+            "waka":  "写一首和歌（5-7-5-7-7 音，共31音，用日文）",
+            "haiku": "写一首俳句（5-7-5 音，共17音，用日文）",
+            "tiba":  "写一段题跋（40-60字散文，文言风格）",
+        }
+        spec = format_specs.get(fmt, format_specs["qiyan"])
+
+        return (
+            f"下面是一幅画的英文描述（Stable Diffusion prompt）：\n"
+            f"{context}\n\n"
+            f"请根据这幅画的**实际内容**，{spec}，作为画上的题词。\n"
+            f"要求：\n"
+            f"1. 题词必须契合画面内容（比如画中是猫，就写猫；画中是山水，就写山水）\n"
+            f"2. 风格古典、典雅、含蓄，避免现代词汇\n"
+            f"3. 不要写标题、不要解释、直接输出正文\n"
+        )
+    
     # ------------------------------------------------------------
     # Layer 1: Agnes
     # ------------------------------------------------------------
 
-    def _from_agnes(self, theme: str, fmt: str) -> Optional[str]:
+    def _from_agnes(self, theme: str, fmt: str, context: str = "") -> Optional[str]:
         """用 Agnes chat 生成。失败返回 None。"""
+        # 🆕 临时调试
+    
         if self.agnes is None:
             # 尝试从环境变量创建
             key = os.getenv("AGNES_API_KEY")
             if not key:
                 return None
             try:
-                from api_engines.agnes import AgnesEngine
+                from forgecore.engines.agnes import AgnesEngine
                 self.agnes = AgnesEngine(
                     api_key=key,
                     base_url=os.getenv("AGNES_BASE_URL"),
@@ -636,7 +668,9 @@ class InscriptionGenerator:
                 return None
 
         # 选模板：通用主题用专属模板
-        if theme == "通用":
+        if context:
+            prompt = self._build_prompt_with_context(theme, fmt, context)        
+        elif theme == "通用":
             template = PROMPT_TEMPLATES_GENERIC.get(fmt, PROMPT_TEMPLATES_GENERIC["waka"])
             prompt = template
         else:
@@ -658,11 +692,11 @@ class InscriptionGenerator:
     # Layer 2: Pollinations 免费 chat
     # ------------------------------------------------------------
 
-    def _from_pollinations(self, theme: str, fmt: str) -> Optional[str]:
+    def _from_pollinations(self, theme: str, fmt: str, context: str = "") -> Optional[str]:
         """用 Pollinations chat 生成。失败返回 None。"""
         if self._pollinations is None:
             try:
-                from api_engines.pollinations import PollinationsEngine
+                from forgecore.engines.pollinations import PollinationsEngine
                 self._pollinations = PollinationsEngine(
                     api_key=os.getenv("POLLINATIONS_API_KEY"),
                 )
@@ -671,7 +705,9 @@ class InscriptionGenerator:
                 return None
 
         # 选模板：通用主题用专属模板
-        if theme == "通用":
+        if context:
+            prompt = self._build_prompt_with_context(theme, fmt, context)        
+        elif theme == "通用":
             template = PROMPT_TEMPLATES_GENERIC.get(fmt, PROMPT_TEMPLATES_GENERIC["waka"])
             prompt = template
         else:
@@ -684,7 +720,7 @@ class InscriptionGenerator:
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},
             ]
-            text = self._pollinations.chat(messages, model="openai")
+            text = self._pollinations.chat(messages)
             if text and len(text.strip()) > 4:
                 return text.strip()
         except Exception as e:
