@@ -92,6 +92,16 @@ class ArtForgeApp:
         # 初始加载默认库
         self._load_presets(self.current_lib)
         self._load_loras()
+        
+        try:
+            from forgecore.templates.manager import TemplateManager
+            self.template_manager = TemplateManager(
+                PROJECT_ROOT / "shared_assets" / "templates" / "sd_gui" / "prompts"
+            )
+            print(f"✅ JSON 模板加载完成: {len(self.template_manager.categories)} 个分类")
+        except Exception as e:
+            print(f"⚠️ JSON 模板加载失败: {e}")
+            self.template_manager = None      
 
     def _load_presets(self, lib_name: str):
         """动态扫描指定预设库目录 (兼容新格式)"""
@@ -178,7 +188,7 @@ class ArtForgeApp:
 
     def build_ui(self):
         """构建 Gradio 界面 (5个Tab)"""
-        with gr.Blocks(title="ArtForge · 东方艺术生成工坊", theme=gr.themes.Soft()) as demo:
+        with gr.Blocks(title="ArtForge · 东方艺术生成工坊") as demo:
             gr.Markdown("# 🎎 ArtForge · 东方艺术生成工坊")
             with gr.Tabs():
                 with gr.Tab("🎨 生图"):
@@ -198,8 +208,14 @@ class ArtForgeApp:
             with gr.Column(scale=1):
                 with gr.Group():
                     gr.Markdown("###  主题与预设")
+                    
+                    # ============================================================
+                    # 一、Python 预设（来自 shared_assets/presets_by_app/）
+                    # ============================================================
+    
                     # ✅ 新增：预设库选择 Dropdown
                     # 扫描 PRESETS_BASE 下所有文件夹作为选项
+                    gr.Markdown("**📁 Python 预设** (presets_by_app)")
                     available_libs = [d.name for d in self.PRESETS_BASE.iterdir() 
                                       if d.is_dir() and not d.name.startswith('_')]
                     preset_library_dd = gr.Dropdown(
@@ -220,9 +236,41 @@ class ArtForgeApp:
                         value=(first_cat_presets[0]["name"] if first_cat_presets else None),
                         label="预设场景 (Preset)"
                     )
-                    prompt_input = gr.Textbox(label="正向提示词 (Prompt)", lines=4, placeholder="由预设自动生成...")
-                    negative_input = gr.Textbox(label="负向提示词", lines=2, value="worst quality, low quality, ugly, deformed, blurry, bad anatomy, watermark, text")
-                
+
+                    # ============================================================
+                    # 二、JSON 模板（来自 shared_assets/templates/sd_gui/prompts/）
+                    # ============================================================
+                    gr.Markdown("**📚 JSON 模板** (templates/sd_gui)")
+                    template_cat_dd = gr.Dropdown(
+                        choices=self.template_manager.list_categories() if self.template_manager else [],
+                        value=(self.template_manager.list_categories()[0]
+                               if self.template_manager and self.template_manager.categories else None),
+                        label="模板分类 (Template Category)"
+                    )
+                    _first_template_items = (
+                        self.template_manager.get_items(self.template_manager.list_categories()[0])
+                        if self.template_manager and self.template_manager.categories else []
+                    )
+                    template_item_dd = gr.Dropdown(
+                        choices=[it["name"] for it in _first_template_items],
+                        value=(_first_template_items[0]["name"] if _first_template_items else None),
+                        label="模板项目 (Template Item)"
+                    )
+                    template_load_btn = gr.Button("⬇️ 加载模板到提示词", size="sm")
+    
+                    # ============================================================
+                    # 三、提示词输入框
+                    # ============================================================
+                    prompt_input = gr.Textbox(
+                        label="正向提示词 (Prompt)", lines=4,
+                        placeholder="由预设或模板自动生成..."
+                    )
+                    negative_input = gr.Textbox(
+                        label="负向提示词", lines=2,
+                        value="worst quality, low quality, ugly, deformed, blurry, bad anatomy, watermark, text"
+                    )
+    
+
                 # 2. 引擎选择
                 with gr.Group():
                     gr.Markdown("### 🔌 引擎选择")
@@ -376,6 +424,36 @@ class ArtForgeApp:
             return ""
         
         preset_dd.change(fn=on_preset_change, inputs=[category_dd, preset_dd], outputs=prompt_input)
+
+        # JSON 模板：分类切换 → 更新项目列表
+        def on_template_cat_change(cat):
+            if not self.template_manager:
+                return gr.update(choices=[], value=None)
+            items = self.template_manager.get_items(cat)
+            names = [it["name"] for it in items]
+            return gr.update(choices=names, value=(names[0] if names else None))
+
+        template_cat_dd.change(
+            fn=on_template_cat_change,
+            inputs=template_cat_dd,
+            outputs=template_item_dd,
+        )
+
+        # JSON 模板：加载按钮 → 填充 prompt
+        def on_template_load(cat, item_name):
+            if not self.template_manager:
+                return ""
+            items = self.template_manager.get_items(cat)
+            target = next((it for it in items if it["name"] == item_name), None)
+            if target:
+                return target.get("prompt", "")
+            return ""
+
+        template_load_btn.click(
+            fn=on_template_load,
+            inputs=[template_cat_dd, template_item_dd],
+            outputs=prompt_input,
+        )
         
         # 引擎模式切换
         def on_engine_mode_change(mode):

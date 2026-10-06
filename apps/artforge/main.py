@@ -4,7 +4,7 @@
 import sys
 import os
 from pathlib import Path
-
+import gradio as gr
 # 🔥 核心修复：路径注入逻辑
 APP_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = APP_ROOT.parent.parent  # 指向 E:\SD_OpenVINO\ForgeWorkspace
@@ -68,7 +68,7 @@ try:
     if hasattr(artforge_gui, 'build_ui'):
         print("🎯 找到 build_ui() 函数，正在构建并启动界面...")
         demo = artforge_gui.build_ui()
-        demo.launch(inbrowser=True, share=False)
+        demo.launch(inbrowser=True, share=False, theme=gr.themes.Soft())
     else:
         print("❌ 未找到 build_ui() 函数。")
 except Exception as e:
