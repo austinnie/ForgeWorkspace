@@ -1,13 +1,13 @@
-﻿{
-    "description":  "漫画角色与画风一致性统一",
-    "name":  "manga_style_unifier",
-    "version":  "1.0.0",
-    "tags":  [
-                 "manga",
-                 "style",
-                 "unifier"
-             ],
-    "dependencies":  [
-
-                     ]
-}
+{
+    "description":  "漫画角色与画风一致性统一",
+    "name":  "manga_style_unifier",
+    "version":  "1.0.0",
+    "tags":  [
+                 "manga",
+                 "style",
+                 "unifier"
+             ],
+    "dependencies":  [
+
+                     ]
+}

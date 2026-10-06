@@ -39,7 +39,7 @@ except ImportError:
 
 # 尝试引入 ControlNet 引擎
 try:
-    from skills.controlnet_img2img.skill import ControlNetImg2Img
+    from forgecore.skills.controlnet_img2img.skill import ControlNetImg2Img
     CONTROLNET_ENGINE_AVAILABLE = True
 except ImportError:
     CONTROLNET_ENGINE_AVAILABLE = False

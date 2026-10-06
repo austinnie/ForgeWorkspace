@@ -49,14 +49,14 @@ except ImportError:
 
 # 尝试导入 ControlNet
 try:
-    from skills.controlnet_img2img.skill import ControlNetImg2Img
+    from forgecore.skills.controlnet_img2img.skill import ControlNetImg2Img
     CONTROLNET_AVAILABLE = True
 except ImportError:
     CONTROLNET_AVAILABLE = False
 
 # 尝试导入 SD 图像生成主引擎
 try:
-    from skills.sd_image_generator.skill import Sdimagegenerator
+    from forgecore.skills.sd_image_generator.skill import Sdimagegenerator
     SD_ENGINE_AVAILABLE = True
 except ImportError:
     SD_ENGINE_AVAILABLE = False

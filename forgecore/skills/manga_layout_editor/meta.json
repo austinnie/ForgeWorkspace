@@ -1,13 +1,13 @@
-﻿{
-    "description":  "漫画分镜排版与贴字引擎",
-    "name":  "manga_layout_editor",
-    "version":  "1.0.0",
-    "tags":  [
-                 "manga",
-                 "layout",
-                 "editor"
-             ],
-    "dependencies":  [
-
-                     ]
-}
+{
+    "description":  "漫画分镜排版与贴字引擎",
+    "name":  "manga_layout_editor",
+    "version":  "1.0.0",
+    "tags":  [
+                 "manga",
+                 "layout",
+                 "editor"
+             ],
+    "dependencies":  [
+
+                     ]
+}

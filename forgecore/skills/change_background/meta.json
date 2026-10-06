@@ -1,5 +1,5 @@
 {
-  "name": "ChangeBackground",
+  "name": "change_background",
   "version": "1.0.0",
   "description": "保持人物不变，替换图片背景，支持预设背景和自定义描述",
   "tags": ["background", "replace", "inpaint", "depth", "controlnet"],

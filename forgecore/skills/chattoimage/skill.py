@@ -25,14 +25,9 @@ _project_root = Path(__file__).parent.parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
-# 尝试导入 markflow 核心
-try:
-    from markflow.core.executor import SkillExecutor
-    from markflow.core.quality import CodeQualityChecker
-except ImportError:
-    # 兼容独立运行
-    SkillExecutor = None
-    CodeQualityChecker = None
+# 兼容独立运行
+SkillExecutor = None
+CodeQualityChecker = None
 
 logger = logging.getLogger(__name__)
 
@@ -454,7 +449,7 @@ class Chattoimage:
     }
 
     # ==================== 默认配置 ====================
-    DEFAULT_CONFIG = {
+    DEFAULT_CONFIG_LLM = {
         "model": "qwen2.5:7b",
         "api_type": "ollama",
         "api_base": "http://localhost:11434",
@@ -469,6 +464,21 @@ class Chattoimage:
         "enable_context": True,
         "auto_save_context": True
     }
+    DEFAULT_CONFIG_AGNES = {
+        "model": "agnes-2.5-flash",                        # ← 改
+        "api_type": "openai_compatible",                   # ← 改
+        "api_base": "https://apihub.agnes-ai.com/v1",      # ← 改
+        "api_key": os.getenv("AGNES_API_KEY", ""),         # ← 改
+        "temperature": 0.3,
+        "max_history": 10,
+        "default_steps": 30,
+        "default_cfg": 7.5,
+        "default_width": 512,
+        "default_height": 768,
+        "default_strength": 0.55,
+        "enable_context": True,
+        "auto_save_context": True
+    }    
 
     # ==================== 系统提示词（精简版） ====================
     SYSTEM_PROMPT = """你是一个智能图像生成助手，负责分析用户的自然语言描述，提取图像生成参数。
@@ -586,7 +596,7 @@ expand_to_full_body, old_photo_restore, chat
 
     def _apply_config(self):
         """应用配置默认值"""
-        for key, value in self.DEFAULT_CONFIG.items():
+        for key, value in self.DEFAULT_CONFIG_AGNES.items():
             if key not in self.config:
                 self.config[key] = value
 
@@ -602,7 +612,7 @@ expand_to_full_body, old_photo_restore, chat
 
     def _get_default_config(self) -> Dict[str, Any]:
         """获取默认配置（供 Executor 使用）"""
-        return self.DEFAULT_CONFIG.copy()
+        return self.DEFAULT_CONFIG_AGNES.copy()
 
     # ==================== LLM 调用 ====================
 
@@ -1427,7 +1437,7 @@ expand_to_full_body, old_photo_restore, chat
 
         try:
             # 动态导入技能模块
-            module = importlib.import_module(f"skills.{skill_name}.skill")
+            module = importlib.import_module(f"forgecore.skills.{skill_name}.skill")
 
             # 查找技能类（排除 SkillSpec）
             skill_class = None

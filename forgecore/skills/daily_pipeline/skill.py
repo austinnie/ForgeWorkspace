@@ -6,7 +6,7 @@ daily_pipeline - PromptForge 每日自动化任务 Skill
 一键完成：生成图片 → AI 鉴赏写文章 → 追加二维码 → 微信排版 → 推送草稿箱
 
 作为 Skill 使用：
-    from skills.daily_pipeline import DailyPipeline
+    from forgecore.skills.daily_pipeline import DailyPipeline
     pipe = DailyPipeline({"output_root": "output/daily"})
     result = pipe.execute(topic="月下松林", count=6)
     print(result["result"]["article_dir"])
@@ -461,7 +461,7 @@ class DailyPipeline:
         vary_preset: bool = False,
     ) -> List[Path]:
         """生成图片 + 统一重命名"""
-        from skills.image_generator import ImageGenerator
+        from forgecore.skills.image_generator import ImageGenerator
 
         out_dir = out_dir.resolve()
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -559,7 +559,7 @@ class DailyPipeline:
 
     def curate_article(self, image_dir: Path, title: str) -> Optional[Path]:
         """鉴赏 + 写文章"""
-        from skills.image_curator import ImageCurator
+        from forgecore.skills.image_curator import ImageCurator
 
         curator = ImageCurator({
             "generate_html": True,
@@ -584,7 +584,7 @@ class DailyPipeline:
         qr_path: Optional[Path],
     ) -> Optional[Path]:
         """微信排版"""
-        from skills.wechat_formatter import WechatFormatter
+        from forgecore.skills.wechat_formatter import WechatFormatter
 
         fmt = WechatFormatter()
         kwargs = {"theme": theme, "open": False}
@@ -602,7 +602,7 @@ class DailyPipeline:
         return out_dir
 
     def publish_wechat(self, article_dir: Path) -> dict:
-        from skills.wechat_formatter import WechatFormatter
+        from forgecore.skills.wechat_formatter import WechatFormatter
 
         fmt = WechatFormatter()
         try:

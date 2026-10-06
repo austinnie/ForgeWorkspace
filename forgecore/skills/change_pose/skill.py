@@ -29,7 +29,7 @@ except ImportError:
     logger.warning("torch 或 PIL 未安装")
 
 try:
-    from skills.controlnet_img2img.skill import ControlnetImg2Img
+    from forgecore.skills.controlnet_img2img.skill import ControlnetImg2Img
     CONTROLNET_ENGINE_AVAILABLE = True
 except ImportError as e:
     CONTROLNET_ENGINE_AVAILABLE = False

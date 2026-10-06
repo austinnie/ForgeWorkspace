@@ -1,13 +1,13 @@
-﻿{
-    "description":  "将漫画排版结果打包导出为 EPUB 电子书",
-    "name":  "manga_to_epub",
-    "version":  "1.0.0",
-    "tags":  [
-                 "manga",
-                 "to",
-                 "epub"
-             ],
-    "dependencies":  [
-
-                     ]
-}
+{
+    "description":  "将漫画排版结果打包导出为 EPUB 电子书",
+    "name":  "manga_to_epub",
+    "version":  "1.0.0",
+    "tags":  [
+                 "manga",
+                 "to",
+                 "epub"
+             ],
+    "dependencies":  [
+
+                     ]
+}

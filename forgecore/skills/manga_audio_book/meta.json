@@ -1,13 +1,13 @@
-﻿{
-    "description":  "漫画有声书生成，将剧本转为语音并合成",
-    "name":  "manga_audio_book",
-    "version":  "1.0.0",
-    "tags":  [
-                 "manga",
-                 "audio",
-                 "book"
-             ],
-    "dependencies":  [
-
-                     ]
-}
+{
+    "description":  "漫画有声书生成，将剧本转为语音并合成",
+    "name":  "manga_audio_book",
+    "version":  "1.0.0",
+    "tags":  [
+                 "manga",
+                 "audio",
+                 "book"
+             ],
+    "dependencies":  [
+
+                     ]
+}

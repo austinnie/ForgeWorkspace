@@ -1,13 +1,13 @@
-﻿{
-    "description":  "将漫画排版结果打包导出为 PDF 文档",
-    "name":  "manga_to_pdf",
-    "version":  "1.0.0",
-    "tags":  [
-                 "manga",
-                 "to",
-                 "pdf"
-             ],
-    "dependencies":  [
-
-                     ]
-}
+{
+    "description":  "将漫画排版结果打包导出为 PDF 文档",
+    "name":  "manga_to_pdf",
+    "version":  "1.0.0",
+    "tags":  [
+                 "manga",
+                 "to",
+                 "pdf"
+             ],
+    "dependencies":  [
+
+                     ]
+}

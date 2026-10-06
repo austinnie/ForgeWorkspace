@@ -580,7 +580,7 @@ JSON array:"""
     ) -> bool:
         """调用 wechat_formatter 排版并发布。"""
         try:
-            from skills.wechat_formatter import WechatFormatter
+            from forgecore.skills.wechat_formatter import WechatFormatter
 
             if work_dir is None:
                 work_dir = Path(self.config["output_dir"]) / "tmp" \

@@ -1,5 +1,5 @@
 {
-  "name": "ChangeClothes",
+  "name": "change_clothes",
   "version": "1.0.0",
   "description": "将人物衣服替换为指定款式",
   "tags": ["clothes", "fashion", "inpaint", "controlnet"],

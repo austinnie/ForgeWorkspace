@@ -1,13 +1,13 @@
-﻿{
-    "description":  "漫画对话气泡自动识别与添加排版",
-    "name":  "manga_bubble_adder",
-    "version":  "1.0.0",
-    "tags":  [
-                 "manga",
-                 "bubble",
-                 "adder"
-             ],
-    "dependencies":  [
-
-                     ]
-}
+{
+    "description":  "漫画对话气泡自动识别与添加排版",
+    "name":  "manga_bubble_adder",
+    "version":  "1.0.0",
+    "tags":  [
+                 "manga",
+                 "bubble",
+                 "adder"
+             ],
+    "dependencies":  [
+
+                     ]
+}

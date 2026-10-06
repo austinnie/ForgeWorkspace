@@ -26,7 +26,7 @@ except ImportError:
     DIFFUSERS_AVAILABLE = False
 
 try:
-    from skills.controlnet_img2img.skill import ControlnetImg2Img
+    from forgecore.skills.controlnet_img2img.skill import ControlnetImg2Img
     CONTROLNET_ENGINE_AVAILABLE = True
 except ImportError as e:
     CONTROLNET_ENGINE_AVAILABLE = False

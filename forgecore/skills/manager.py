@@ -57,8 +57,10 @@ class SkillManager:
                 with open(meta_path, "r", encoding="utf-8-sig") as f:
                     meta = json.load(f)
 
-                skill_name = meta.get("name", child.name)
-                self._registry[skill_name] = {
+                skill_id = child.name                    # ← 目录名 = 技能 ID
+                self._registry[skill_id] = {
+                    "id": skill_id,
+                    "display_name": meta.get("name", child.name),    # ← meta.name = 显示名
                     "dir": child,
                     "meta": meta,
                     "module_name": child.name,
@@ -79,12 +81,13 @@ class SkillManager:
         self.scan()
         return [
             {
-                "name": name,
+                "name": info["id"],                              # ← 技能 ID（目录名）
+                "display_name": info["display_name"],            # ← 显示名
                 "version": info["meta"].get("version", "?"),
                 "description": info["meta"].get("description", ""),
                 "tags": info["meta"].get("tags", []),
             }
-            for name, info in self._registry.items()
+            for info in self._registry.values()
         ]
 
     # ──────────────────────────────────────────────

@@ -311,7 +311,7 @@ class SearchEngine:
     def _search_videos_via_vp(self, query, limit=20):
         """复用 video_player 的 B站 + YouTube 搜索"""
         try:
-            from skills.video_player import VideoPlayer
+            from forgecore.skills.video_player import VideoPlayer
             vp = VideoPlayer()
             r = vp.execute(action="search", query=query,
                            source="all", limit=limit)
