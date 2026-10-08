@@ -22,7 +22,8 @@ import sys
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
-from PIL import Image, ImageDraw, ImageFont
+import random
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
 
 
 # ============================================================
@@ -240,6 +241,40 @@ class SealGenerator:
         base = min(by_h, by_w) * 0.86
         return max(12, int(base))
 
+
+    # ============================================================
+    # 石刻效果处理 (安全增强版)
+    # ============================================================
+    def _apply_stone_effect(self, img: Image.Image) -> Image.Image:
+        """模拟石刻/拓片效果：边缘粗糙、磨损感、凹凸感"""
+        try:
+            if img.mode != 'RGBA':
+                img = img.convert('RGBA')
+            # 1. 轻微模糊
+            img = img.filter(ImageFilter.GaussianBlur(radius=0.5))
+            # 2. 边缘粗糙化
+            r, g, b, a = img.split()
+            a_rough = a.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MedianFilter(3))
+            # 3. 表面噪点
+            rgb = Image.merge('RGB', (r, g, b))
+            noise = Image.new('RGB', img.size, (0, 0, 0))
+            pixels = noise.load()
+            w, h = img.size
+            for i in range(0, w, 2):
+                for j in range(0, h, 2):
+                    if random.random() > 0.5:
+                        val = random.randint(150, 255)
+                        for di in range(2):
+                            for dj in range(2):
+                                if i+di < w and j+dj < h:
+                                    pixels[i+di, j+dj] = (val, val, val)
+            rgb_textured = ImageChops.multiply(rgb, noise)
+            rt, gt, bt = rgb_textured.split()
+            return Image.merge('RGBA', (rt, gt, bt, a_rough))
+        except Exception as e:
+            print(f"⚠️ 石刻效果处理失败，回退到平面: {e}")
+            return img
+        
     # ---------- 核心：生成印章 ----------
 
     def make(
@@ -249,6 +284,7 @@ class SealGenerator:
         shape: str = "square",
         size: int = 256,
         border: int = 8,
+        texture: str = "flat",  # 🆕 新增：flat | stone
     ) -> Image.Image:
         """
         生成印章（RGBA 透明背景）。
@@ -310,9 +346,15 @@ class SealGenerator:
         # ---- 绘制 ----
         for ch, (gx, gy) in placed:
             draw.text((gx, gy), ch, font=font, fill=text_color)
-
+            
+        # ---- 石刻效果 ----
+        if texture == "stone":
+            img = self._apply_stone_effect(img)
+    
         return img
 
+
+    
     # ---------- 贴到作品 ----------
 
     @staticmethod
@@ -372,10 +414,11 @@ class SealGenerator:
         scale: float = 0.12,
         margin: int = 40,
         shape: str = "square",
+        texture: str = "flat",  #  新增
     ) -> Image.Image:
         cw, ch = canvas.size
         seal_size = max(64, int(min(cw, ch) * scale * 1.6))
-        seal = self.make(text, style=style, shape=shape, size=seal_size)
+        seal = self.make(text, style=style, shape=shape, size=seal_size,texture=texture)
         return self.paste(canvas, seal, position=position,
                           margin=margin, scale=scale)
 
@@ -390,6 +433,7 @@ class SealGenerator:
         style: str = "zhu_wen",
         size: int = 256,
         border: int = 8,
+        texture: str = "flat",  #  新增 texture 参数
     ) -> Image.Image:
         """圆形印章（朱文/白文）"""
         style = style.lower()
@@ -426,6 +470,10 @@ class SealGenerator:
         for ch, (gx, gy) in placed:
             draw.text((gx, gy), ch, font=font, fill=text_color)
 
+        # 在方法最后，return 之前添加：
+        if texture == "stone":
+            img = self._apply_stone_effect(img)
+        
         return img
 
     def make_ellipse(
@@ -434,6 +482,7 @@ class SealGenerator:
         style: str = "zhu_wen",
         size: int = 256,
         border: int = 8,
+        texture: str = "flat",  # 🆕 新增
     ) -> Image.Image:
         """椭圆印章（横椭圆，适合 2 字/3 字）"""
         w = size
@@ -470,6 +519,9 @@ class SealGenerator:
         for ch, (gx, gy) in placed:
             draw.text((gx, gy), ch, font=font, fill=text_color)
 
+        if texture == "stone":
+            img = self._apply_stone_effect(img)
+        
         return img
 
     def make_double_border(
@@ -479,6 +531,7 @@ class SealGenerator:
         size: int = 256,
         border: int = 6,
         gap: int = 6,
+        texture: str = "flat",  # 🆕 新增
     ) -> Image.Image:
         """双边框印章（仿古"印中印"）"""
         style = style.lower()
@@ -526,6 +579,9 @@ class SealGenerator:
         for ch, (gx, gy) in placed:
             draw.text((gx, gy), ch, font=font, fill=text_color)
 
+        if texture == "stone":
+            img = self._apply_stone_effect(img)
+        
         return img
 
     def make_with_corner_marks(
@@ -534,6 +590,7 @@ class SealGenerator:
         style: str = "zhu_wen",
         size: int = 256,
         border: int = 6,
+        texture: str = "flat",  # 🆕 新增
     ) -> Image.Image:
         """四角带装饰的印章（四灵印风格）"""
         style = style.lower()
@@ -585,6 +642,9 @@ class SealGenerator:
         for ch, (gx, gy) in placed:
             draw.text((gx, gy), ch, font=font, fill=text_color)
 
+        if texture == "stone":
+            img = self._apply_stone_effect(img)
+        
         return img
 
     # ============================================================
@@ -678,6 +738,7 @@ class SealGenerator:
         text: str,
         scheme: str = "contrast",
         margin_ratio: float = 0.05,
+        texture: str = "flat",  # 🆕 新增
     ) -> Image.Image:
         """
         按预设方案一键贴全套印章。
@@ -715,6 +776,7 @@ class SealGenerator:
                                         * item["scale"] * 1.6))
                 seal_img = self.make_double_border(
                     text, "zhu_wen", size=seal_size,
+                    texture=texture
                 )
                 canvas = self.paste(
                     canvas, seal_img,
@@ -731,6 +793,7 @@ class SealGenerator:
                                         * item["scale"] * 1.6))
                 seal_img = self.make_round(
                     text, style=style, size=seal_size,
+                    texture=texture
                 )
                 canvas = self.paste(
                     canvas, seal_img,
@@ -747,6 +810,7 @@ class SealGenerator:
                 position=item["pos"],
                 scale=item["scale"],
                 margin=margin,
+                texture=texture
             )
 
         return canvas        

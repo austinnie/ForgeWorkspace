@@ -313,6 +313,14 @@ class ArtForgeApp:
                         use_inscription_cb = gr.Checkbox(label="启用竖排题词", value=True, scale=1)
                         use_seal_cb = gr.Checkbox(label="启用印章", value=True, scale=1)
 
+                        # 🆕 新增：印章质感选择
+                        seal_texture_dd = gr.Dropdown(
+                            choices=[("平面 (Flat)", "flat"), ("石刻 (Stone)", "stone")],
+                            value="flat",
+                            label="印章质感",
+                            scale=1
+                        )
+    
                     # 3. 做旧高级设置 (折叠，内部左右对齐)
                     with gr.Accordion("📜 做旧高级设置", open=False):
                         with gr.Row():
@@ -487,7 +495,8 @@ class ArtForgeApp:
                 use_inscription_cb, inscription_format_dd, inscription_position_dd, 
                 use_library_only_cb,
                 use_seal_cb, use_watermark_cb,save_clean_copy_cb, 
-                inscription_language_dd, use_appraise_cb
+                inscription_language_dd, use_appraise_cb,
+                seal_texture_dd  # 🆕 新增参数
             ],
             outputs=[output_image, output_image_clean, output_info]  # 🔥 严格对应 3 个输出
         )
@@ -1091,7 +1100,8 @@ class ArtForgeApp:
                         use_aging,aging_strength, aging_texture,
                         use_inscription, inscription_format, inscription_position, 
                         use_library_only,
-                        use_seal, use_watermark, save_clean_copy,inscription_lang, use_appraise):
+                        use_seal, use_watermark, save_clean_copy,inscription_lang, use_appraise,
+                        seal_texture):
         """统一生成入口 (严格返回 2 个值)"""
         try:
             log = [f"🚀 开始生成任务...", f"📂 分类: {category} | 预设: {preset_name}"]
@@ -1143,7 +1153,8 @@ class ArtForgeApp:
                     use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
                     use_seal, use_watermark, save_clean_copy,
                     preset_name, category, log,
-                    full_prompt
+                    full_prompt,
+                    seal_texture  # 🆕 传入质感参数
                 )
             else:
                 clean_image = None                
@@ -1265,7 +1276,8 @@ class ArtForgeApp:
                             use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
                             use_seal, use_watermark,save_clean_copy, 
                             preset_name,category, log,
-                            context=""):
+                            context="",
+                            seal_texture="flat"):
         """后期处理流水线 (修正顺序：先题词印章，再装裱)"""
         try:
             from PIL import Image
@@ -1315,8 +1327,8 @@ class ArtForgeApp:
                 try:
                     from forgecore.post_process.seal_generator import SealGenerator
                     sg = SealGenerator()
-                    image = sg.apply_scheme(image, ARTIST_NAME, scheme="contrast")
-                    log.append("🔴 印章完成")
+                    image = sg.apply_scheme(image, ARTIST_NAME, scheme="contrast", texture=seal_texture)
+                    log.append("🔴 印章完成(质感: {seal_texture})")
                 except Exception as e: log.append(f"⚠️ 印章失败: {e}")
 
             # 3. 装裱 (把画心+题词+印章一起装裱)
