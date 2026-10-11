@@ -103,6 +103,13 @@ class DiffusersEngine(BaseLocalEngine):
         """执行真实的本地推理"""
         if self.pipeline is None:
             raise RuntimeError("模型未加载，请先调用 load_model()")
+
+        # 🔽 新增：自动将宽高对齐到 8 的倍数，防止 diffusers 报错
+        width = (width // 8) * 8
+        height = (height // 8) * 8
+        if width <= 0: width = 512
+        if height <= 0: height = 512
+        # 🔼 新增结束
         
         print(f"🎨 开始推理: {prompt[:50]}...")
         print(f"⚙️ 参数: steps={num_inference_steps}, cfg={guidance_scale}, seed={seed}")
