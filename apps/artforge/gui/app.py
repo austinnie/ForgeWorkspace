@@ -1,11 +1,12 @@
-"""ArtForge GUI 主入口 (全功能完整重构版 - 修复返回值数量问题)"""
-import gradio as gr
+"""ArtForge GUI 主入口 (重构版 - Tab 拆分)"""
 import os
 import sys
 import random
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Optional
+
+import gradio as gr
 from PIL import Image
 
 # 🔥 通用预设引擎
@@ -17,45 +18,40 @@ except ImportError:
     print("⚠️ PresetEngine 未找到")
 
 # ============================================================
-# 🎨 个性化配置 (可在此处修改全局默认值)
+# 🎨 个性化配置
 # ============================================================
-WATERMARK_TEXT = "东方艺术"       # 水印文字
-ARTIST_NAME = "东方艺术"          # 艺术家/品牌名称 (用于印章等)
+WATERMARK_TEXT = "东方艺术"
+ARTIST_NAME = "东方艺术"
 
-# ============================================================
-# 📜 题词主题映射表
-# 作用：把 UI 传来的英文 preset_name/category 映射到题词库(LIBRARY)中存在的中文主题
-# ============================================================
 INSCRIPTION_THEME_MAP = {
-    # 妖怪类 → 保持传统主题
     "tengu": "天狗",
     "kappa": "河童",
     "kitsune": "九尾狐",
     "yuki_onna": "雪女",
     "oni": "鬼",
     "hyakki_yagyo": "百鬼夜行",
-    # 传统类
     "dunhuang": "飞天",
     "feitian": "飞天",
     "tang_beauty": "唐仕女",
-    # 其余全部走"通用"，靠 prompt 内容决定
     "default": "通用",
 }
 
 # ============================================================
-# 1. 路径注入与依赖导入
+# 路径注入
 # ============================================================
 APP_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-if str(PROJECT_ROOT) not in sys.path: sys.path.insert(0, str(PROJECT_ROOT))
-if str(APP_ROOT) not in sys.path: sys.path.insert(0, str(APP_ROOT))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+if str(APP_ROOT) not in sys.path:
+    sys.path.insert(0, str(APP_ROOT))
 
 try:
     from forgecore.config.paths import Paths
     from forgecore.config.registry import ModelRegistry
-    from forgecore.engines import create_engine          # 🆕 补上这个
-    from forgecore.skills.manager import skill_manager   # 🆕 补上这个    
+    from forgecore.engines import create_engine
+    from forgecore.skills.manager import skill_manager
     FORGE_CORE_AVAILABLE = True
 except ImportError:
     FORGE_CORE_AVAILABLE = False
@@ -76,11 +72,11 @@ class ArtForgeApp:
         # 预设库根目录
         self.PRESETS_BASE = PROJECT_ROOT / "shared_assets" / "presets_by_app"
 
-        # 通用预设引擎（负责扫描 + 组合）
+        # 通用预设引擎
         if PRESET_ENGINE_AVAILABLE:
             self.preset_engine = PresetEngine(
                 presets_base=self.PRESETS_BASE,
-                default_layers=None,   # 自动从 apps/artforge/layers 加载
+                default_layers=None,
             )
         else:
             self.preset_engine = None
@@ -90,14 +86,12 @@ class ArtForgeApp:
         self.current_category: Optional[str] = None
         self.current_preset: Optional[str] = None
 
-        # 预加载可选库列表
         self.available_libs = (
             self.preset_engine.list_libraries() if self.preset_engine else []
         )
         if self.current_lib not in self.available_libs and self.available_libs:
             self.current_lib = self.available_libs[0]
 
-        # 预加载当前库的分类
         self.categories = (
             self.preset_engine.list_categories(self.current_lib)
             if self.preset_engine else []
@@ -114,10 +108,12 @@ class ArtForgeApp:
         except Exception as e:
             print(f"⚠️ JSON 模板加载失败: {e}")
             self.template_manager = None
-        
+
+    # ---------- 工具方法 ----------
+
     def _load_loras(self):
-        """扫描本地 LoRA 目录"""
-        if not FORGE_CORE_AVAILABLE: return
+        if not FORGE_CORE_AVAILABLE:
+            return
         try:
             for lora in ModelRegistry.scan_loras("sd15"):
                 self.loras.append(lora)
@@ -128,15 +124,11 @@ class ArtForgeApp:
             print(f"⚠️ LoRA 扫描失败: {e}")
 
     def _build_prompt_from_preset(self, preset_dict: Dict) -> str:
-        """根据预设拼接提示词（走通用引擎）"""
         if not preset_dict:
             return ""
-
         if self.preset_engine is not None:
             positive, _ = self.preset_engine.build_prompt(preset_dict)
             return positive
-
-        # 兜底：老逻辑（6 层）
         if "layers" not in preset_dict:
             return ""
         layers = preset_dict["layers"]
@@ -145,928 +137,99 @@ class ArtForgeApp:
             if key in layers and layers[key]:
                 parts.append(random.choice(layers[key]))
         return ", ".join(parts)
-    
+
     def _get_models(self, model_type: str) -> list:
-        if not FORGE_CORE_AVAILABLE: return ["ForgeCore 未就绪"]
-        try: return [m["name"] for m in ModelRegistry.scan_checkpoints(model_type)]
-        except: return ["扫描失败"]
+        if not FORGE_CORE_AVAILABLE:
+            return ["ForgeCore 未就绪"]
+        try:
+            return [m["name"] for m in ModelRegistry.scan_checkpoints(model_type)]
+        except Exception:
+            return ["扫描失败"]
+
+    # ---------- UI ----------
 
     def build_ui(self):
-        """构建 Gradio 界面 (5个Tab)"""
+        from apps.artforge.gui.tabs import (
+            build_generation_tab,
+            build_img2img_tab,
+            build_pixel_magic_tab,
+            build_skill_hub_tab,
+            build_chat_tab,
+            build_config_tab,
+        )
+
         with gr.Blocks(title="ArtForge · 东方艺术生成工坊") as demo:
             gr.Markdown("# 🎎 ArtForge · 东方艺术生成工坊")
             with gr.Tabs():
                 with gr.Tab("🎨 生图"):
-                    self._build_generation_tab()
-                with gr.Tab("🖼️ 图生图"):                    
-                    self._build_img2img_tab()
+                    build_generation_tab(self)
+                with gr.Tab("🖼️ 图生图"):
+                    build_img2img_tab(self)
                 with gr.Tab("🪄 像素魔法"):
-                    self._build_pixel_magic_tab()
+                    build_pixel_magic_tab(self)
                 with gr.Tab("🛠️ 技能中心"):
-                    self._build_skill_hub_tab() 
-                with gr.Tab("💬 对话生图"):           # 🆕
-                    self._build_chat_tab()              # 🆕                    
+                    build_skill_hub_tab(self)
+                with gr.Tab("💬 对话生图"):
+                    build_chat_tab(self)
                 with gr.Tab("️ 鉴赏与排版"):
-                    gr.Markdown("### 图片鉴赏与排版推送\n(功能开发中... 将接入 BLIP/LLM 进行自动鉴赏与微信排版)")
+                    gr.Markdown("### 图片鉴赏与排版推送\n(功能开发中...)")
                 with gr.Tab("⚙️ 配置"):
-                    self._build_config_tab()
+                    build_config_tab(self)
         return demo
 
-    def _build_generation_tab(self):
-        with gr.Row():
-            with gr.Column(scale=1):
-                with gr.Group():
-                    gr.Markdown("###  主题与预设")
-                    
-                    # ============================================================
-                    # 一、Python 预设（来自 shared_assets/presets_by_app/）
-                    # ============================================================
-    
-                    # ✅ 新增：预设库选择 Dropdown
-                    # 扫描 PRESETS_BASE 下所有文件夹作为选项
-                    gr.Markdown("**📁 Python 预设** (presets_by_app)")
-                    preset_library_dd = gr.Dropdown(
-                        choices=self.available_libs,
-                        value=self.current_lib,
-                        label=" 预设库 (Preset Library)"
-                    )
-                    category_dd = gr.Dropdown(
-                        choices=self.categories,
-                        value=(self.categories[0] if self.categories else None),
-                        label="主题分类 (Category)"
-                    )
+    # ---------- 生成调度 ----------
 
-                    _first_cat = self.categories[0] if self.categories else None
-                    _first_presets = (
-                        self.preset_engine.list_preset_names(self.current_lib, _first_cat)
-                        if (self.preset_engine and _first_cat) else []
-                    )
-                    preset_dd = gr.Dropdown(
-                        choices=_first_presets,
-                        value=(_first_presets[0] if _first_presets else None),
-                        label="预设场景 (Preset)"
-                    )
-
-                    # ============================================================
-                    # 二、JSON 模板（来自 shared_assets/templates/sd_gui/prompts/）
-                    # ============================================================
-                    gr.Markdown("**📚 JSON 模板** (templates/sd_gui)")
-                    template_cat_dd = gr.Dropdown(
-                        choices=self.template_manager.list_categories() if self.template_manager else [],
-                        value=(self.template_manager.list_categories()[0]
-                               if self.template_manager and self.template_manager.categories else None),
-                        label="模板分类 (Template Category)"
-                    )
-                    _first_template_items = (
-                        self.template_manager.get_items(self.template_manager.list_categories()[0])
-                        if self.template_manager and self.template_manager.categories else []
-                    )
-                    template_item_dd = gr.Dropdown(
-                        choices=[it["name"] for it in _first_template_items],
-                        value=(_first_template_items[0]["name"] if _first_template_items else None),
-                        label="模板项目 (Template Item)"
-                    )
-                    template_load_btn = gr.Button("⬇️ 加载模板到提示词", size="sm")
-    
-                    # ============================================================
-                    # 三、提示词输入框
-                    # ============================================================
-                    prompt_input = gr.Textbox(
-                        label="正向提示词 (Prompt)", lines=4,
-                        placeholder="由预设或模板自动生成..."
-                    )
-                    negative_input = gr.Textbox(
-                        label="负向提示词", lines=2,
-                        value="worst quality, low quality, ugly, deformed, blurry, bad anatomy, watermark, text"
-                    )
-    
-
-                # 2. 引擎选择
-                with gr.Group():
-                    gr.Markdown("### 🔌 引擎选择")
-                    engine_mode = gr.Radio(
-                        choices=[("☁️ API 引擎", "api"), ("💻 本地模型", "local")],
-                        value="api", label="生成模式"
-                    )
-                    api_provider = gr.Dropdown(
-                        choices=["pollinations", "agnes", "siliconflow", "tongyi", "yige", "hunyuan"],
-                        value="agnes", label="API 提供商"
-                    )
-                    with gr.Group(visible=False) as local_config:
-                        model_type_dd = gr.Dropdown(choices=["SD1.5", "SDXL"], value="SD1.5", label="模型类型")
-                        model_dd = gr.Dropdown(choices=self._get_models("sd15"), label="选择主模型")
-                        refresh_model_btn = gr.Button(" 刷新模型", size="sm")
-                
-                # 3. LoRA 设置 (仅本地模型有效)
-                with gr.Group(visible=False) as lora_group:
-                    gr.Markdown("###  LoRA 扩展")
-                    lora_dd = gr.Dropdown(
-                        choices=[l["name"] for l in self.loras],
-                        label="选择 LoRA", allow_custom_value=True
-                    )
-                    lora_weight = gr.Slider(minimum=0.0, maximum=1.5, value=0.7, step=0.1, label="LoRA 权重")
-                
-                # 4. 高级参数
-                with gr.Group():
-                    gr.Markdown("### ⚙️ 高级参数")
-                    with gr.Row():
-                        steps_slider = gr.Slider(minimum=10, maximum=50, value=15, step=1, label="采样步数 (Steps)")
-                        cfg_slider = gr.Slider(minimum=1.0, maximum=15.0, value=7.5, step=0.5, label="CFG Scale")
-                    with gr.Row():
-                        seed_input = gr.Number(value=-1, label="种子 (Seed, -1 为随机)", precision=0)
-                        count_slider = gr.Slider(minimum=1, maximum=4, value=1, step=1, label="生成数量 (Batch Size)")
-                
-                # 5. 后期处理与装裱 (逻辑优化版)
-                with gr.Group():
-                    gr.Markdown("### ️ 后期处理与装裱")
-                    
-                    # 1. 装裱方式 (全局基础，独立一行)
-                    composition_dd = gr.Dropdown(
-                        choices=["无 (仅画心)", "立轴 (9:16)", "横卷 (16:9)", "屏风 (4:3)", "团扇 (1:1)"],
-                        value="立轴 (9:16)", label="装裱方式"
-                    )
-
-                    # 2. 核心功能开关 (最常用的三个，直接露出来)
-                    with gr.Row():
-                        use_aging_cb = gr.Checkbox(label="启用古画做旧", value=False, scale=1)
-                        use_inscription_cb = gr.Checkbox(label="启用竖排题词", value=True, scale=1)
-                        use_seal_cb = gr.Checkbox(label="启用印章", value=True, scale=1)
-
-                        # 🆕 新增：印章质感选择
-                        seal_texture_dd = gr.Dropdown(
-                            choices=[("平面 (Flat)", "flat"), ("石刻 (Stone)", "stone")],
-                            value="flat",
-                            label="印章质感",
-                            scale=1
-                        )
-    
-                    # 3. 做旧高级设置 (折叠，内部左右对齐)
-                    with gr.Accordion("📜 做旧高级设置", open=False):
-                        with gr.Row():
-                            aging_strength = gr.Slider(
-                                minimum=0.1, maximum=1.0, value=0.5, step=0.1, 
-                                label="做旧强度 (0.1=轻微泛黄, 1.0=重度破损)",
-                                scale=2
-                            )
-                            aging_texture = gr.Dropdown(
-                                choices=["xuan_paper", "silk", "aged", "brown", "none"], 
-                                value="xuan_paper", 
-                                label="纸张纹理类型 (none=无纹理)",
-                                scale=1
-                            )
-
-                    # 4. 题词高级设置 (折叠，把“内置库”移回这里，逻辑归位！)
-                    with gr.Accordion("🖌️ 题词高级设置", open=False):
-                        with gr.Row():
-                            inscription_language_dd = gr.Dropdown(
-                                choices=[
-                                    ("自动 (Auto)", "auto"),
-                                    ("中文 (Chinese)", "chinese"),
-                                    ("日文 (Japanese)", "japanese"),
-                                    ("英文 (English)", "english"),
-                                ],
-                                value="auto", label="题词语言", scale=1
-                            )
-                            inscription_format_dd = gr.Dropdown(
-                                choices=[
-                                    ("自动 (Auto)", "auto"), 
-                                    ("五言绝句 (20字)", "wuyan"), 
-                                    ("七言绝句 (28字)", "qiyan"), 
-                                    ("和歌 (Waka)", "waka"), 
-                                    ("俳句 (Haiku)", "haiku"), 
-                                    ("题跋 (散文)", "tiba")
-                                ],
-                                value="auto", 
-                                label="题词体裁 (Format)", scale=1
-                            )
-                            inscription_position_dd = gr.Dropdown(
-                                choices=[
-                                    ("右上题诗 (Top Right)", "top_right"), 
-                                    ("左下落款 (Bottom Left)", "bottom_left"), 
-                                    ("左上角 (Top Left)", "top_left")
-                                ],
-                                value="top_right", 
-                                label="题词位置 (Position)", scale=1
-                            )
-                        
-                        # 👇 移回题词区域，逻辑就通了 👇
-                        with gr.Row():
-                            use_library_only_cb = gr.Checkbox(
-                                label="仅用内置诗句库 (离线/秒出，不调用 AI)", value=False
-                            )
-
-                    # 5. 其他/实验性功能 (剩下的低频选项)
-                    with gr.Row():
-                        use_watermark_cb = gr.Checkbox(label="隐形水印", value=False, scale=1)
-                        # 👇 新增：同时保存无水印原图 👇
-                        save_clean_copy_cb = gr.Checkbox(label="同时保存无水印留底版 (自己收藏)", value=False)
-                        # 👆 新增结束 👆
-
-                        use_appraise_cb = gr.Checkbox(label="AI 自动鉴赏 (BLIP)", value=False, scale=1)
-                        
-                # 生成按钮 (保留原位)
-                generate_btn = gr.Button("🎨 开始生成", variant="primary", size="lg")
-            
-            # 右侧输出列 (保留原位，绝对不丢)
-            with gr.Column(scale=2):
-                output_image = gr.Image(label="生成结果 (分享版)", type="filepath", height=700)
-                # 👇 新增：留底版展示框 👇
-                output_image_clean = gr.Image(label="无水印留底版 (自己收藏)", type="filepath", height=700, visible=False) # 默认隐藏，有图时再显示                
-                output_info = gr.Textbox(label="执行日志", lines=12)
-
-        # ========== 事件绑定 ==========
-        # 1. 切换预设库 -> 更新分类 + 预设
-        def on_lib_change(lib_name):
-            self.current_lib = lib_name
-            new_cats = (
-                self.preset_engine.list_categories(lib_name)
-                if self.preset_engine else []
-            )
-            self.categories = new_cats
-            first_cat = new_cats[0] if new_cats else None
-            self.current_category = first_cat
-
-            new_presets = (
-                self.preset_engine.list_preset_names(lib_name, first_cat)
-                if (self.preset_engine and first_cat) else []
-            )
-            first_preset = new_presets[0] if new_presets else None
-            self.current_preset = first_preset
-
-            return (
-                gr.update(choices=new_cats, value=first_cat),
-                gr.update(choices=new_presets, value=first_preset),
-            )
-
-        preset_library_dd.change(
-            fn=on_lib_change,
-            inputs=[preset_library_dd],
-            outputs=[category_dd, preset_dd],
-        )
-
-        # 2. 切换分类 -> 更新预设
-        def on_category_change(cat):
-            self.current_category = cat
-            names = (
-                self.preset_engine.list_preset_names(self.current_lib, cat)
-                if self.preset_engine else []
-            )
-            first = names[0] if names else None
-            self.current_preset = first
-            return gr.update(choices=names, value=first)
-
-        category_dd.change(
-            fn=on_category_change,
-            inputs=category_dd,
-            outputs=preset_dd,
-        )
-
-        # 3. 切换预设 -> 更新 prompt
-        def on_preset_change(cat, preset_name):
-            self.current_category = cat
-            self.current_preset = preset_name
-            if not self.preset_engine:
-                return ""
-            preset = self.preset_engine.load_preset(self.current_lib, cat, preset_name)
-            if preset:
-                return self._build_prompt_from_preset(preset)
-            return ""
-
-        preset_dd.change(
-            fn=on_preset_change,
-            inputs=[category_dd, preset_dd],
-            outputs=prompt_input,
-        )
-
-        # JSON 模板：分类切换 → 更新项目列表
-        def on_template_cat_change(cat):
-            if not self.template_manager:
-                return gr.update(choices=[], value=None)
-            items = self.template_manager.get_items(cat)
-            names = [it["name"] for it in items]
-            return gr.update(choices=names, value=(names[0] if names else None))
-
-        template_cat_dd.change(
-            fn=on_template_cat_change,
-            inputs=template_cat_dd,
-            outputs=template_item_dd,
-        )
-
-        # JSON 模板：加载按钮 → 填充 prompt
-        def on_template_load(cat, item_name):
-            if not self.template_manager:
-                return ""
-            items = self.template_manager.get_items(cat)
-            target = next((it for it in items if it["name"] == item_name), None)
-            if target:
-                return target.get("prompt", "")
-            return ""
-
-        template_load_btn.click(
-            fn=on_template_load,
-            inputs=[template_cat_dd, template_item_dd],
-            outputs=prompt_input,
-        )
-        
-        # 引擎模式切换
-        def on_engine_mode_change(mode):
-            is_local = (mode == "local")
-            return (
-                gr.update(visible=not is_local),
-                gr.update(visible=is_local),
-                gr.update(visible=is_local)
-            )
-        
-        engine_mode.change(
-            fn=on_engine_mode_change,
-            inputs=engine_mode, 
-            outputs=[api_provider, local_config, lora_group]
-        )
-        
-        # 刷新模型
-        def on_refresh_models(m_type):
-            key = "sd15" if m_type == "SD1.5" else "sdxl"
-            return gr.update(choices=self._get_models(key))
-        
-        refresh_model_btn.click(on_refresh_models, inputs=model_type_dd, outputs=model_dd)
-        model_type_dd.change(on_refresh_models, inputs=model_type_dd, outputs=model_dd)
-        
-        # 生成按钮
-        generate_btn.click(
-            fn=self._generate_image,
-            inputs=[
-                engine_mode, api_provider, model_dd, 
-                category_dd, preset_dd, composition_dd,
-                prompt_input, negative_input,
-                lora_dd, lora_weight,
-                steps_slider, cfg_slider, seed_input, count_slider,
-                use_aging_cb, aging_strength, aging_texture, 
-                use_inscription_cb, inscription_format_dd, inscription_position_dd, 
-                use_library_only_cb,
-                use_seal_cb, use_watermark_cb,save_clean_copy_cb, 
-                inscription_language_dd, use_appraise_cb,
-                seal_texture_dd  # 🆕 新增参数
-            ],
-            outputs=[output_image, output_image_clean, output_info]  # 🔥 严格对应 3 个输出
-        )
-
-    def _build_img2img_tab(self):
-        """构建图生图 & ControlNet Tab (集成到 app.py)"""
-        with gr.Tab("🖼️ 图生图 & ControlNet"):
-            gr.Markdown("### 🖼️ 图生图 / ControlNet 工作台")
-            gr.Markdown("💡 **核心逻辑**：上传参考图锁定特征，通过提示词引导继续创作。默认使用 Agnes API 图生图，也支持本地 ControlNet 模型。")
-            
-            with gr.Row():
-                with gr.Column(scale=1):
-                    # 1. 核心：参考图上传
-                    self.i2i_ref_image = gr.Image(label="📎 上传参考图 (Control Source / 图生图底图)", type="pil", height=300)
-                    
-                    # 2. 引擎选择
-                    self.i2i_engine_mode = gr.Radio(
-                        choices=[("☁️ Agnes API (图生图)", "agnes"), ("💻 本地模型 (ControlNet)", "local")],
-                        value="agnes", 
-                        label="生成引擎"
-                    )
-                    
-                    # 本地模型选择 (复用 app.py 已有的模型扫描逻辑，如果有的话；这里新建一个确保可用)
-                    from forgecore.config.registry import ModelRegistry
-                    local_models = [m["name"] for m in ModelRegistry.scan_checkpoints("sd15")]
-                    self.i2i_local_model = gr.Dropdown(
-                        choices=local_models,
-                        label="本地模型 (SD1.5) - 仅本地引擎生效",
-                        value=local_models[0] if local_models else None
-                    )
-
-                    # 3. 提示词
-                    self.i2i_prompt = gr.Textbox(label="提示词 (Prompt - 描述你想要的变化)", value="masterpiece, best quality, detailed face", lines=2)
-                    self.i2i_neg = gr.Textbox(label="负面提示词 (仅本地模型生效)", value="worst quality, lowres, bad anatomy", lines=1)
-                    
-                    # 4. 控制参数
-                    with gr.Group():
-                        gr.Markdown("#### 🎛️ 控制参数")
-                        self.i2i_cn_type = gr.Dropdown(
-                            choices=["openpose", "canny", "depth", "lineart", "hed", "无 (纯图生图)"],
-                            label="ControlNet 类型 / 参考方式", value="无 (纯图生图)"
-                        )
-                        self.i2i_strength = gr.Slider(0.1, 1.0, value=0.6, label="重绘幅度 / ControlNet 强度 (0.1=微调, 1.0=大改)")
-                        
-                    self.i2i_btn = gr.Button("🚀 开始图生图", variant="primary", size="lg")
-                    
-                with gr.Column(scale=1):
-                    self.i2i_out = gr.Image(label="生成结果", type="pil", height=400)
-                    self.i2i_log = gr.Textbox(label="生成日志", lines=10)
-
-        # 绑定事件
-        self.i2i_btn.click(
-            fn=self._run_img2img,
-            inputs=[self.i2i_ref_image, self.i2i_engine_mode, self.i2i_local_model, self.i2i_prompt, self.i2i_neg, self.i2i_cn_type, self.i2i_strength],
-            outputs=[self.i2i_out, self.i2i_log]
-        )
-
-    def _run_img2img(self, ref_img, mode, model_name, prompt, negative, cn_type, strength):
-        """执行图生图逻辑 (包含自动保存)"""
-        logs = ["🚀 启动图生图 / ControlNet 流水线..."]
-        
-        if ref_img is None:
-            return None, "❌ 必须上传参考图！图生图/ControlNet 需要底图来锁定特征。"
-
-        try:
-            final_image = None
-            
-            # ==========================================
-            # 路径 A: Agnes API 图生图 (默认)
-            # ==========================================
-            if mode == "agnes":
-                logs.append("☁️ 使用 Agnes API 图生图")
-                from gui.common import load_env_config
-                from forgecore.engines.helpers import agnes_img2img
-
-                config = load_env_config()
-                final_image = agnes_img2img(
-                    prompt=prompt,
-                    image=ref_img,
-                    strength=strength,
-                    width=768, height=1024,
-                    config=config,
-                )
-                logs.append("✅ Agnes API 图生图完成")
-
-            # ==========================================
-            # 路径 B: 本地模型 ControlNet
-            # ==========================================
-            else:
-                if not model_name:
-                    return None, "❌ 选择本地引擎时，必须选择本地模型。"
-                
-                from forgecore.config.registry import ModelRegistry
-                from forgecore.skills.manager import skill_manager
-                
-                from forgecore.config.model_resolver import resolve_model
-                model_obj = resolve_model(model_name)
-                if not model_obj:
-                    return None, "❌ 找不到模型路径"
-                model_path = model_obj["absolute_path"]
-
-                logs.append(f"📂 本地模型: {model_name}")
-
-                # 调用 ControlNet Skill
-                if cn_type and cn_type != "无 (纯图生图)":
-                    logs.append(f"🎛️ 调用本地 ControlNet (类型: {cn_type})")
-                    res = skill_manager.run(
-                        "controlnet", action="generate", image=ref_img, prompt=prompt,
-                        negative_prompt=negative, model_path=model_path,
-                        controlnet_type=cn_type, controlnet_conditioning_scale=strength
-                    )
-                else:
-                    logs.append(f"🖼️ 调用本地图生图")
-                    res = skill_manager.run(
-                        "controlnet", action="generate", image=ref_img, prompt=prompt,
-                        negative_prompt=negative, model_path=model_path,
-                        controlnet_type="canny", controlnet_conditioning_scale=0.0, strength=strength
-                    )
-
-                from forgecore.skills.result_utils import extract_skill_image
-                final_image = extract_skill_image(res)
-                
-                if final_image is None:
-                    logs.append(f"❌ 本地生成失败: {res.get('error')}")
-                else:
-                    logs.append("✅ 本地生成成功")
-
-            # ==========================================
-            # 核心：自动保存功能 (参考 app.py 原有逻辑)
-            # ==========================================
-            if final_image is not None:
-                from forgecore.image.saver import save_image
-                save_path = save_image(final_image, prefix="img2img")
-                if save_path:
-                    logs.append(f"💾 图片已自动保存: {save_path}")
-                return final_image, "\n".join(logs)
-            else:
-                return None, "\n".join(logs) + "\n❌ 未生成有效图片"
-
-        except Exception as e:
-            import traceback
-            return None, f"❌ 执行出错: {str(e)}\n{traceback.format_exc()}"
-
-    # ============================================================
-    # 🆕 Tab 3: 像素魔法 (Pixel Magic)
-    # ============================================================
-    def _build_pixel_magic_tab(self):
-        """构建像素魔法 Tab (一键像素编辑)"""
-        import tempfile
-        from forgecore.skills.manager import skill_manager
-        
-        PIXEL_SKILLS = [
-            "add_glasses", "add_tattoo", "add_animal_ears", "add_background_objects",
-            "change_hair", "change_age", "change_gender", "change_body_type", "change_expression",
-            "change_eye_color", "change_makeup", "change_skin_tone", "change_nationality", "change_face",
-            "change_clothes", "change_clothing_style", "remove_clothes",
-            "change_pose", "change_perspective", "expand_to_full_body",
-            "change_background", "change_furniture", "change_lighting", "day_night_transfer", "season_transfer", "weather_transfer",
-            "remove_object", "replace_object",
-            "anime_to_real", "real_to_anime", "style_transfer", "sketch_to_real", "colorize_sketch", "photo_realistic",
-            "fix_human_anatomy", "mosaic_reducer", "old_photo_restore", "photo_restorer", "human_to_robot", "fantasy_character", "mecha_generator",
-            "intimate_closeup", "bathroom_nude", "beach_lingerie", "bedroom_lingerie", "bedroom_nude", "pool_nude", "studio_nude", "nude_oil_painting", "nude_sculpture",
-        ]
-        
-        with gr.Row():
-            with gr.Column(scale=1):
-                magic_skill_dd = gr.Dropdown(choices=PIXEL_SKILLS, value="add_glasses", label="✨ 选择魔法技能")
-                magic_ref_image = gr.Image(label="📎 上传参考图 (必须)", type="pil", height=300)
-                magic_engine_mode = gr.Radio(choices=[("☁️ Agnes API (模拟)", "agnes"), ("💻 本地模型 (推荐)", "local")], value="local", label="生成引擎")
-                local_models = [m["name"] for m in ModelRegistry.scan_checkpoints("sd15")] if FORGE_CORE_AVAILABLE else []
-                magic_local_model = gr.Dropdown(choices=local_models, label="本地模型", value=local_models[0] if local_models else None)
-                magic_btn = gr.Button("✨ 施展魔法", variant="primary", size="lg")
-            with gr.Column(scale=1):
-                magic_out = gr.Image(label="✨ 结果", type="pil", height=400)
-                magic_log = gr.Textbox(label="日志", lines=10)
-
-        def run_pixel_magic(skill_name, ref_img, mode, model_name):
-            logs = [f"✨ 启动: {skill_name}"]
-            if ref_img is None: return None, "❌ 必须上传参考图！"
-            try:
-                final_image = None
-                if mode == "agnes":
-                    logs.append(f"☁️ 使用 Agnes API 模拟 {skill_name}...")
-                    prompt_map = {
-                        "add_glasses": "wearing elegant glasses, sophisticated, masterpiece",
-                        "add_tattoo": "with beautiful tattoo on skin, artistic, masterpiece",
-                        "change_hair": "different hairstyle, detailed hair, masterpiece",
-                        "change_background": "beautiful new background, scenic, masterpiece",
-                        "remove_object": "clean background, no objects, masterpiece",
-                    }
-                    sim_prompt = prompt_map.get(skill_name, f"{skill_name.replace('_', ' ')}, masterpiece")
-                    from gui.common import load_env_config
-                    from forgecore.engines.helpers import agnes_img2img
-
-                    final_image = agnes_img2img(
-                        prompt=sim_prompt,
-                        image=ref_img,
-                        strength=0.6,
-                        width=768, height=1024,
-                        config=load_env_config(),
-                    )
-                    logs.append("✅ Agnes API 模拟执行成功")
-                else:
-                    if not model_name: return None, "❌ 请选择本地模型"
-                    model_obj = next((m for m in ModelRegistry.scan_checkpoints("sd15") if m["name"] == model_name), None)
-                    if not model_obj:
-                        return None, "❌ 找不到模型"
-    
-                    from forgecore.image.temp_utils import pil_to_temp_png, safe_remove
-                    from forgecore.skills.result_utils import extract_skill_image                        
-                    temp_img_path = pil_to_temp_png(ref_img)
-                    logs.append(f"📂 图片暂存: {Path(temp_img_path).name}")
-                    output_path = temp_img_path.replace(".png", f"_{skill_name}_out.png")
-                    kwargs = {"image_path": temp_img_path, "output_path": output_path, "model_path": model_obj["absolute_path"]}
-                    logs.append(f"📂 模型: {model_name}")
-
-                    res = skill_manager.run(skill_name, **kwargs)
-                    final_image = extract_skill_image(res)
-
-                    # 降级重试（保持原逻辑）
-                    if final_image is None and "unexpected keyword argument" in str(res.get("error", "")):
-                        logs.append("🔄 降级重试...")
-                        kwargs.pop("output_path", None)
-                        res = skill_manager.run(skill_name, **kwargs)
-                        final_image = extract_skill_image(res)
-
-                    if final_image is not None:
-                        logs.append("✅ 本地技能执行成功")
-                    else:
-                        logs.append(f"❌ 本地技能失败: {res.get('error')}")
-
-                    safe_remove(temp_img_path)
-
-                if final_image:
-                    from forgecore.image.saver import save_image
-                    save_path = save_image(final_image, prefix=f"magic_{skill_name}")
-                    if save_path: logs.append(f"💾 已保存: {save_path}")
-                    return final_image, "\n".join(logs)
-                return None, "\n".join(logs) + "\n❌ 未能生成图片"
-            except Exception as e:
-                return None, f"❌ 错误: {e}"
-
-        magic_btn.click(fn=run_pixel_magic, inputs=[magic_skill_dd, magic_ref_image, magic_engine_mode, magic_local_model], outputs=[magic_out, magic_log])
-
-
-    def _build_skill_hub_tab(self):
-        """技能中心：统一调用 forgecore.skills 下所有 skill"""
-        import json
-        from pathlib import Path
-        from forgecore.skills.manager import skill_manager
-        
-        from forgecore.skills.meta_utils import (
-            load_meta as _load_meta,
-            build_default_params as _build_default_params,
-            format_info_md as _format_info_md,
-        )
-        
-        SKILLS_DIR = Path(__file__).resolve().parents[3] / "forgecore" / "skills"
-
-        # ---------- UI 构建 ----------
-        with gr.Row():
-            with gr.Column(scale=1):
-                # 1. 技能选择
-                all_skills = skill_manager.list_skills()
-                skill_names = sorted([s["name"] for s in all_skills])
-                skill_info_map = {s["name"]: s for s in all_skills}
-
-                skill_dd = gr.Dropdown(
-                    choices=skill_names,
-                    value=skill_names[0] if skill_names else None,
-                    label=f"选择技能 (共 {len(skill_names)} 个)",
-                    interactive=True,
-                )
-
-                # 2. 参数 JSON 输入
-                params_input = gr.Code(
-                    label="参数 (JSON)",
-                    language="json",
-                    value="{}",
-                    lines=12,
-                )
-
-                # 3. 快捷操作
-                with gr.Row():
-                    reset_btn = gr.Button("↺ 重置为默认", size="sm")
-                    run_btn = gr.Button("🚀 执行", variant="primary", size="sm")
-
-            with gr.Column(scale=1):
-                # 4. 说明面板
-                info_md = gr.Markdown("### 选择技能后显示说明")
-
-                # 5. 执行结果
-                log_output = gr.Textbox(label="日志", lines=8)
-                result_output = gr.JSON(label="结果")
-
-        # ---------- 事件：切 skill → 自动填默认参数 + 显示说明 ----------
-        def on_skill_change(skill_name):
-            meta = _load_meta(SKILLS_DIR, skill_name)
-            skill_meta = skill_info_map.get(skill_name, {})
-            default_params = _build_default_params(meta)
-            default_json = json.dumps(default_params, ensure_ascii=False, indent=2)
-            info = _format_info_md(skill_name, meta, skill_meta)
-            return default_json, info
-
-        skill_dd.change(
-            fn=on_skill_change,
-            inputs=skill_dd,
-            outputs=[params_input, info_md],
-        )
-
-        # 首次加载自动填一次
-        if skill_names:
-            init_json, init_info = on_skill_change(skill_names[0])
-            params_input.value = init_json
-            info_md.value = init_info
-
-        # 重置按钮：重新填默认
-        reset_btn.click(
-            fn=on_skill_change,
-            inputs=skill_dd,
-            outputs=[params_input, info_md],
-        )
-
-        # ---------- 执行 ----------
-        def execute_skill(skill_name, json_str):
-            logs = [f"🚀 执行 skill: {skill_name}"]
-            try:
-                params = json.loads(json_str) if json_str.strip() else {}
-            except json.JSONDecodeError as e:
-                return f"❌ JSON 格式错误: {e}", {"error": str(e)}
-            except Exception as e:
-                return f"❌ 解析参数失败: {e}", {"error": str(e)}
-
-            logs.append(f"📋 参数: {json.dumps(params, ensure_ascii=False)[:200]}")
-
-            try:
-                result = skill_manager.run(skill_name, **params)
-                status = result.get("status", "unknown")
-                logs.append(f"✅ 状态: {status}")
-                if result.get("error"):
-                    logs.append(f"❌ 错误: {result['error']}")
-                return "\n".join(logs), result
-            except Exception as e:
-                import traceback
-                logs.append(f"❌ 执行异常: {e}")
-                logs.append(traceback.format_exc())
-                return "\n".join(logs), {"error": str(e)}
-
-        run_btn.click(
-            fn=execute_skill,
-            inputs=[skill_dd, params_input],
-            outputs=[log_output, result_output],
-        )
-
-
-    def _build_chat_tab(self):
-        """💬 对话生图 Tab — 自然语言 → 自动路由 → 出图"""
-        import json
-        from forgecore.skills.manager import skill_manager
-
-        # 会话状态
-        chat_state = {"history": []}
-
-        with gr.Row():
-            with gr.Column(scale=1):
-                gr.Markdown("### 💬 自然语言生成 / 编辑")
-                gr.Markdown(
-                    "**例子**：画一只猫 / 加猫耳 / 换成红色裙子 / "
-                    "把背景换成樱花 / 转成油画风格 / 老照片修复"
-                )
-
-                # 输入
-                msg_input = gr.Textbox(
-                    label="你想做什么？",
-                    placeholder="例如：画一只坐在窗台上的猫，阳光洒落",
-                    lines=3,
-                )
-
-                # 参考图（可选，图生图用）
-                ref_image = gr.Image(
-                    label="参考图 (可选，用于图生图)",
-                    type="filepath",
-                    height=200,
-                )
-
-                # 会话 ID
-                conv_id = gr.Textbox(
-                    label="会话 ID",
-                    value="default",
-                    info="相同 ID 的对话会记住上下文（多轮编辑）",
-                )
-
-                with gr.Row():
-                    send_btn = gr.Button("🚀 发送", variant="primary", size="lg")
-                    clear_btn = gr.Button("🗑️ 清空历史", size="lg")
-
-                # 参数（可选）
-                with gr.Accordion("⚙️ 高级参数", open=False):
-                    use_api_cb = gr.Checkbox(
-                        label="使用 API 出图（Agnes，快）",
-                        value=True,
-                    )
-                    llm_model = gr.Dropdown(
-                        choices=["agnes-2.5-flash"],
-                        value="agnes-2.5-flash",
-                        label="LLM 模型",
-                    )
-
-            with gr.Column(scale=2):
-                # AI 回复
-                response_box = gr.Textbox(
-                    label="AI 回复",
-                    lines=4,
-                    interactive=False,
-                )
-
-                # 生成图
-                result_image = gr.Image(
-                    label="生成结果",
-                    type="filepath",
-                    height=500,
-                )
-
-                # 原始 JSON（调试）
-                with gr.Accordion("🔍 详细结果 (JSON)", open=False):
-                    detail_json = gr.JSON(label="完整返回")
-
-                # 历史
-                with gr.Accordion("📜 对话历史", open=False):
-                    history_box = gr.Textbox(
-                        label="",
-                        lines=10,
-                        interactive=False,
-                    )
-
-        # ---------- 事件 ----------
-        def on_send(message, ref_img, conv, use_api, model):
-            if not message or not message.strip():
-                return "⚠️ 请输入内容", None, {}, ""
-
-            skill_manager.scan()
-
-            # 构建参数
-            kwargs = {
-                "message": message.strip(),
-                "conversation_id": conv or "default",
-            }
-            if ref_img:
-                kwargs["image_path"] = ref_img
-
-            # 传给 ChatToImage
-            kwargs["model"] = model
-            kwargs["api_type"] = "openai_compatible"
-            kwargs["api_base"] = "https://apihub.agnes-ai.com/v1"
-            import os
-            kwargs["api_key"] = os.getenv("AGNES_API_KEY", "")
-
-            # 执行
-            try:
-                result = skill_manager.run("chattoimage", **kwargs)
-            except Exception as e:
-                import traceback
-                return f"❌ 执行异常: {e}\n{traceback.format_exc()}", None, {}, ""
-
-            status = result.get("status", "unknown")
-            if status == "success":
-                reply = result.get("response", "(无回复)")
-                paths = result.get("image_paths", [])
-                img = paths[0] if paths else None
-
-                # 更新历史
-                chat_state["history"].append({
-                    "user": message,
-                    "ai": reply,
-                    "image": img,
-                })
-                history_text = "\n\n".join([
-                    f"👤 {h['user']}\n🤖 {h['ai']}"
-                    for h in chat_state["history"][-10:]
-                ])
-                return reply, img, result, history_text
-            else:
-                err = result.get("error", "未知错误")
-                return f"❌ {err}", None, result, ""
-
-        def on_clear():
-            chat_state["history"] = []
-            return "", None, {}, ""
-
-        send_btn.click(
-            fn=on_send,
-            inputs=[msg_input, ref_image, conv_id, use_api_cb, llm_model],
-            outputs=[response_box, result_image, detail_json, history_box],
-        )
-
-        clear_btn.click(
-            fn=on_clear,
-            inputs=[],
-            outputs=[response_box, result_image, detail_json, history_box],
-        )
-
-        # 回车发送
-        msg_input.submit(
-            fn=on_send,
-            inputs=[msg_input, ref_image, conv_id, use_api_cb, llm_model],
-            outputs=[response_box, result_image, detail_json, history_box],
-        )
-        
-    def _generate_image(self, engine_mode, api_provider, model_name, category, preset_name, composition, 
+    def _generate_image(self, engine_mode, api_provider, model_name, category, preset_name, composition,
                         prompt, negative, lora_name, lora_weight, steps, cfg, seed, count,
-                        use_aging,aging_strength, aging_texture,
-                        use_inscription, inscription_format, inscription_position, 
+                        use_aging, aging_strength, aging_texture,
+                        use_inscription, inscription_format, inscription_position,
                         use_library_only,
-                        use_seal, use_watermark, save_clean_copy,inscription_lang, use_appraise,
+                        use_seal, use_watermark, save_clean_copy, inscription_lang, use_appraise,
                         seal_texture):
-        """统一生成入口 (严格返回 2 个值)"""
         try:
-            log = [f"🚀 开始生成任务...", f"📂 分类: {category} | 预设: {preset_name}"]
+            log = ["🚀 开始生成任务...", f"📂 分类: {category} | 预设: {preset_name}"]
 
-            # ============================================================
-            #  新增：根据装裱方式自动调整图片尺寸
-            # ============================================================
             SCROLL_SIZE_MAP = {
-                "立轴 (9:16)": (768, 1365),   # 竖长图
-                "横卷 (16:9)": (1365, 768),   # 横宽图
-                "屏风 (4:3)":  (1024, 768),   # 标准横图
-                "团扇 (1:1)":  (1024, 1024),  # 正方形
-                "无 (仅画心)": (768, 1024),   # 默认竖图
+                "立轴 (9:16)": (768, 1365),
+                "横卷 (16:9)": (1365, 768),
+                "屏风 (4:3)": (1024, 768),
+                "团扇 (1:1)": (1024, 1024),
+                "无 (仅画心)": (768, 1024),
             }
-            
-            # 获取目标尺寸，如果未匹配到则使用默认 768x1024
             width, height = SCROLL_SIZE_MAP.get(composition, (768, 1024))
             log.append(f" 检测到装裱方式 [{composition}]，自动调整生图尺寸为: {width}x{height}")
 
-            
-            # 1. 提示词处理
             preset_dict = (
                 self.preset_engine.load_preset(self.current_lib, category, preset_name)
                 if self.preset_engine else None
             )
             full_prompt = prompt if prompt else self._build_prompt_from_preset(preset_dict)
-            
-            # 2. 引擎路由
+
             images = []
             if engine_mode == "api":
                 for i in range(count):
-                    img, api_log = self._generate_with_api(api_provider, full_prompt, negative, width, height, steps, cfg, seed + i if seed != -1 else None)
+                    img, api_log = self._generate_with_api(
+                        api_provider, full_prompt, negative, width, height, steps, cfg,
+                        seed + i if seed != -1 else None,
+                    )
                     log.extend(api_log.split('\n'))
-                    if img: images.append(img)
+                    if img:
+                        images.append(img)
             elif engine_mode == "local":
                 for i in range(count):
-                    img, local_log = self._generate_with_local(model_name, full_prompt, negative, width, height, steps, cfg, seed + i if seed != -1 else None, lora_name, lora_weight)
+                    img, local_log = self._generate_with_local(
+                        model_name, full_prompt, negative, width, height, steps, cfg,
+                        seed + i if seed != -1 else None, lora_name, lora_weight,
+                    )
                     log.extend(local_log.split('\n'))
-                    if img: images.append(img)
-                    
+                    if img:
+                        images.append(img)
+
             if not images:
-                return None, "\n".join(log) + "\n❌ 生成失败，未返回图片"
-                
+                return None, None, "\n".join(log) + "\n❌ 生成失败，未返回图片"
+
             final_image = images[0]
-            
-            # 3. 后期处理流水线 (参数严格对齐)
+
             if ARTFORGE_CORE_AVAILABLE:
                 final_image, clean_image = self._apply_post_process(
                     final_image, composition,
@@ -1074,52 +237,49 @@ class ArtForgeApp:
                     use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
                     use_seal, use_watermark, save_clean_copy,
                     preset_name, category, log,
-                    full_prompt,
-                    seal_texture  # 🆕 传入质感参数
+                    full_prompt, seal_texture,
                 )
             else:
-                clean_image = None                
-                
-            # 4. 保存 (双轨保存)
+                clean_image = None
+
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             save_dir = Paths.OUTPUT_DIR if FORGE_CORE_AVAILABLE else APP_ROOT / "output"
             save_dir.mkdir(parents=True, exist_ok=True)
-            
+
             main_path = None
-            clean_path = None #  必须初始化，防止下面没赋值导致报错
-            
-            # A. 保存主图 (带水印/完整后期)
+            clean_path = None
+
             if final_image:
                 main_path = save_dir / f"artforge_{timestamp}.png"
                 final_image.save(main_path)
                 log.append(f"💾 分享版已保存: {main_path}")
-                
-            # B. 保存留底图 (无水印)
+
             if clean_image is not None:
                 clean_path = save_dir / f"artforge_{timestamp}_clean.png"
                 clean_image.save(clean_path)
                 log.append(f"🔒 留底版已保存: {clean_path}")
-                
-            #  返回 3 个值，严格匹配 outputs=[output_image, output_image_clean, output_info]
+
             return (
-                str(main_path) if main_path else None, 
-                str(clean_path) if clean_path else None, 
-                "\n".join(log)
+                str(main_path) if main_path else None,
+                str(clean_path) if clean_path else None,
+                "\n".join(log),
             )
-            
+
         except Exception as e:
             import traceback
-            return None, f"❌ 生成崩溃: {str(e)}\n\n{traceback.format_exc()}"  # 🔥 严格返回 3 个值
+            return None, None, f"❌ 生成崩溃: {str(e)}\n\n{traceback.format_exc()}"
 
     def _generate_with_api(self, provider, prompt, negative, w, h, steps, cfg, seed):
-        """API 生成 (严格返回 2 个值)"""
         log = []
         try:
             from forgecore.engines import create_engine
             from gui.common import load_env_config
             config = load_env_config()
             engine = create_engine(provider, config)
-            image = engine.generate_single(prompt=prompt, negative=negative, width=w, height=h, steps=steps, cfg=cfg, seed=seed)
+            image = engine.generate_single(
+                prompt=prompt, negative=negative, width=w, height=h,
+                steps=steps, cfg=cfg, seed=seed,
+            )
             log.append("✅ API 返回成功")
             return image, "\n".join(log)
         except Exception as e:
@@ -1127,21 +287,15 @@ class ArtForgeApp:
             return None, "\n".join(log)
 
     def _generate_with_local(self, model_name, prompt, negative, w, h, steps, cfg, seed, lora_name, lora_weight):
-        """本地生成 (严格对齐 10 个参数，返回 2 个值)"""
         log = []
         try:
             from forgecore.engines.local_engine import DiffusersEngine
             log.append(f"💻 正在使用本地模型: {model_name}")
             log.append(f"📐 尺寸: {w}x{h}")
-            
+
             if not FORGE_CORE_AVAILABLE:
                 return None, "❌ ForgeCore 未就绪"
-                
-            # 1. 智能获取模型绝对路径 (增加调试日志)
-            model_path = None
-            found_in_type = "sd15"
-            
-            # 🔥 打印出所有扫描到的模型，方便排查
+
             from forgecore.config.model_resolver import resolve_model
             model_obj = resolve_model(model_name)
             model_path = model_obj["absolute_path"] if model_obj else None
@@ -1150,109 +304,105 @@ class ArtForgeApp:
             if not model_path:
                 log.append(f"❌ 找不到模型: {model_name}")
                 return None, "\n".join(log)
-                
+
             log.append(f"📂 绝对路径: {model_path} (类型: {found_in_type})")
-            
-            # 2. 加载本地引擎
             log.append("⏳ 正在加载模型到内存 (首次可能需要 30-60 秒)...")
             engine = DiffusersEngine(model_type=found_in_type, device="CPU")
             engine.load_model(model_path)
-            
-            # 3. 加载 LoRA (如果选择了)
+
             if lora_name and lora_name != "None":
                 log.append(f"🎭 加载 LoRA: {lora_name} (权重 {lora_weight})")
-                
-            # 4. 执行推理
+
             log.append(f"🎨 正在执行本地推理 (steps={steps}, cfg={cfg})...")
             image = engine.generate(
-                prompt=prompt, 
-                negative_prompt=negative, 
-                width=w, 
-                height=h, 
-                num_inference_steps=steps, 
-                guidance_scale=cfg, 
-                seed=seed
+                prompt=prompt,
+                negative_prompt=negative,
+                width=w, height=h,
+                num_inference_steps=steps,
+                guidance_scale=cfg,
+                seed=seed,
             )
             log.append("✅ 本地推理完成")
             return image, "\n".join(log)
-            
+
         except Exception as e:
             import traceback
             log.append(f"❌ 本地失败: {e}")
             log.append(traceback.format_exc())
-            return None, "\n".join(log)    
+            return None, "\n".join(log)
 
     def _apply_post_process(self, image, composition,
                             use_aging, aging_strength, aging_texture,
                             use_inscription, inscription_lang, inscription_format, inscription_position, use_library_only,
-                            use_seal, use_watermark,save_clean_copy, 
-                            preset_name,category, log,
+                            use_seal, use_watermark, save_clean_copy,
+                            preset_name, category, log,
                             context="",
                             seal_texture="flat"):
-        """后期处理流水线 (修正顺序：先题词印章，再装裱)"""
         try:
-            from PIL import Image
-            if image.mode != 'RGBA': image = image.convert('RGBA')
+            from PIL import Image as _PILImage
+            if image.mode != 'RGBA':
+                image = image.convert('RGBA')
 
-            # 1. 题词 (先盖在画心上)
             if use_inscription:
                 try:
                     from forgecore.post_process.inscription_generator import InscriptionGenerator
                     from compose_artwork import InscriptionRenderer
-                    
+
                     ig = InscriptionGenerator()
                     backend = "library" if use_library_only else "auto"
 
-                    #  核心修复：通过映射表获取真实的题词主题
-                    # 优先匹配 preset_name，其次 category，最后兜底 "通用"
                     final_theme = INSCRIPTION_THEME_MAP.get(
-                        preset_name, 
-                        INSCRIPTION_THEME_MAP.get(category, "通用")
+                        preset_name,
+                        INSCRIPTION_THEME_MAP.get(category, "通用"),
                     )
-                    
+
                     text, _ = ig.generate(
-                        theme=final_theme,  #  使用映射后的主题（如 "通用"）
-                        format=inscription_format, 
-                        return_meta=True, 
+                        theme=final_theme,
+                        format=inscription_format,
+                        return_meta=True,
                         language=inscription_lang if inscription_lang != "auto" else None,
                         backend=backend,
-                        context=context
+                        context=context,
                     )
-                    
+
                     if text:
                         w, h = image.size
                         renderer = InscriptionRenderer()
                         image = renderer.render(
-                            image, text, 
-                            font_size=max(24, int(min(w, h) * 0.045)), 
-                            position=inscription_position
+                            image, text,
+                            font_size=max(24, int(min(w, h) * 0.045)),
+                            position=inscription_position,
                         )
                         log.append(f"️ 题词完成 [{inscription_format} @ {inscription_position}] (模式:{backend})")
                     else:
                         log.append("⚠️ 题词生成结果为空")
-                except Exception as e: 
+                except Exception as e:
                     log.append(f"⚠️ 题词失败: {e}")
 
-            # 2. 印章 (盖在画心上)
             if use_seal:
                 try:
                     from forgecore.post_process.seal_generator import SealGenerator
                     sg = SealGenerator()
                     image = sg.apply_scheme(image, ARTIST_NAME, scheme="contrast", texture=seal_texture)
                     log.append(f"🔴 印章完成(质感: {seal_texture})")
-                except Exception as e: log.append(f"⚠️ 印章失败: {e}")
+                except Exception as e:
+                    log.append(f"⚠️ 印章失败: {e}")
 
-            # 3. 装裱 (把画心+题词+印章一起装裱)
             if composition and composition != "无 (仅画心)":
                 try:
-                    comp_map = {"立轴 (9:16)": "vertical", "横卷 (16:9)": "horizontal", "屏风 (4:3)": "byobu", "团扇 (1:1)": "fan"}
+                    comp_map = {
+                        "立轴 (9:16)": "vertical",
+                        "横卷 (16:9)": "horizontal",
+                        "屏风 (4:3)": "byobu",
+                        "团扇 (1:1)": "fan",
+                    }
                     from services.scroll_composer import ScrollComposer
                     composer = ScrollComposer()
                     image = composer.compose(image, comp_map.get(composition, "vertical"))
                     log.append(f"🖼️ 装裱完成: {composition}")
-                except Exception as e: log.append(f"⚠️ 装裱失败: {e}")
+                except Exception as e:
+                    log.append(f"⚠️ 装裱失败: {e}")
 
-            # 4. 做旧 (装裱后做旧，让裱边也有纹理)
             if use_aging:
                 try:
                     from forgecore.post_process.aging_processor import AgingProcessor
@@ -1261,44 +411,33 @@ class ArtForgeApp:
                     image = aging.apply(image.convert("RGB"), texture=tex, strength=float(aging_strength))
                     image = image.convert("RGBA")
                     log.append(f"📜 做旧完成 (纹理:{aging_texture}, 强度:{aging_strength})")
-                except Exception as e: log.append(f"⚠️ 做旧失败: {e}")
+                except Exception as e:
+                    log.append(f"⚠️ 做旧失败: {e}")
 
-            # 5. 水印(关键修改：在这里复制一份留底图)
             clean_image = None
             if use_watermark:
-                # 如果用户勾选了“同时保存无水印留底版”，在加水印前复制当前状态
                 if save_clean_copy:
-                    clean_image = image.copy() 
-                    log.append("🔒 已生成无水印留底副本")            
+                    clean_image = image.copy()
+                    log.append("🔒 已生成无水印留底副本")
                 try:
                     from forgecore.post_process.watermark import WatermarkProcessor
                     wp = WatermarkProcessor()
                     image = wp.add_subtle_watermark(image.convert("RGB"), WATERMARK_TEXT, opacity=30)
                     image = image.convert("RGBA")
                     log.append(f"💧 水印完成 (文字: {WATERMARK_TEXT})")
-                except Exception as e: log.append(f"⚠️ 水印失败: {e}")
+                except Exception as e:
+                    log.append(f"⚠️ 水印失败: {e}")
 
-            #  返回两个值：(最终图, 留底图)
             return image, clean_image
         except Exception as e:
             log.append(f"❌ 后期处理整体失败: {e}")
             return image, None
-        
-    def _build_config_tab(self):
-        with gr.Group():
-            gr.Markdown("### ⚙️ 系统状态")
-            if FORGE_CORE_AVAILABLE:
-                sd15 = len(ModelRegistry.scan_checkpoints("sd15"))
-                sdxl = len(ModelRegistry.scan_checkpoints("sdxl"))
-                lora_count = len(self.loras)
-                gr.Markdown(f"**ForgeCore**: ✅ 已加载\n**SD1.5 模型**: {sd15} 个\n**SDXL 模型**: {sdxl} 个\n**LoRA**: {lora_count} 个")
-            else:
-                gr.Markdown("**ForgeCore**: ❌ 未加载")
 
 
 def build_ui():
     app = ArtForgeApp()
     return app.build_ui()
+
 
 if __name__ == "__main__":
     demo = build_ui()
