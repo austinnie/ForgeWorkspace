@@ -10,6 +10,14 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 from PIL import Image
 
+# 🔥 通用预设引擎
+try:
+    from forgecore.prompt import PresetEngine
+    PRESET_ENGINE_AVAILABLE = True
+except ImportError:
+    PRESET_ENGINE_AVAILABLE = False
+    print("⚠️ PresetEngine 未找到")
+
 # ============================================================
 # 🎨 个性化配置 (可在此处修改全局默认值)
 # ============================================================
@@ -42,9 +50,6 @@ INSCRIPTION_THEME_MAP = {
 APP_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-# 🔥 已切换为共享东方美学库
-PRESETS_DIR = PROJECT_ROOT / "shared_assets" / "presets_by_app" / "oriental_forge"
-
 if str(PROJECT_ROOT) not in sys.path: sys.path.insert(0, str(PROJECT_ROOT))
 if str(APP_ROOT) not in sys.path: sys.path.insert(0, str(APP_ROOT))
 
@@ -68,18 +73,40 @@ except ImportError:
 
 class ArtForgeApp:
     def __init__(self):
-        self.presets_map: Dict[str, List[Dict]] = {}
-        self.categories: List[str] = []
         self.loras: List[Dict] = []
-        
-        # ✅ 新增：定义预设库根目录和当前选中的库
+
+        # 预设库根目录
         self.PRESETS_BASE = PROJECT_ROOT / "shared_assets" / "presets_by_app"
-        self.current_lib = "oriental_forge" # 默认库，你可以改成 "anime_forge"
-        
-        # 初始加载默认库
-        self._load_presets(self.current_lib)
+
+        # 通用预设引擎（负责扫描 + 组合）
+        if PRESET_ENGINE_AVAILABLE:
+            self.preset_engine = PresetEngine(
+                presets_base=self.PRESETS_BASE,
+                default_layers=None,   # 自动从 apps/artforge/layers 加载
+            )
+        else:
+            self.preset_engine = None
+
+        # 当前选中的库 / 分类 / 预设
+        self.current_lib = "oriental_forge"
+        self.current_category: Optional[str] = None
+        self.current_preset: Optional[str] = None
+
+        # 预加载可选库列表
+        self.available_libs = (
+            self.preset_engine.list_libraries() if self.preset_engine else []
+        )
+        if self.current_lib not in self.available_libs and self.available_libs:
+            self.current_lib = self.available_libs[0]
+
+        # 预加载当前库的分类
+        self.categories = (
+            self.preset_engine.list_categories(self.current_lib)
+            if self.preset_engine else []
+        )
+
         self._load_loras()
-        
+
         try:
             from forgecore.templates.manager import TemplateManager
             self.template_manager = TemplateManager(
@@ -88,8 +115,8 @@ class ArtForgeApp:
             print(f"✅ JSON 模板加载完成: {len(self.template_manager.categories)} 个分类")
         except Exception as e:
             print(f"⚠️ JSON 模板加载失败: {e}")
-            self.template_manager = None      
-
+            self.template_manager = None
+        
     def _load_presets(self, lib_name: str):
         """动态扫描指定预设库目录 (兼容新格式)"""
         self.current_lib = lib_name
@@ -142,15 +169,24 @@ class ArtForgeApp:
             print(f"⚠️ LoRA 扫描失败: {e}")
 
     def _build_prompt_from_preset(self, preset_dict: Dict) -> str:
-        """根据预设 layers 拼接提示词"""
-        if not preset_dict or "layers" not in preset_dict: return ""
+        """根据预设拼接提示词（走通用引擎）"""
+        if not preset_dict:
+            return ""
+
+        if self.preset_engine is not None:
+            positive, _ = self.preset_engine.build_prompt(preset_dict)
+            return positive
+
+        # 兜底：老逻辑（6 层）
+        if "layers" not in preset_dict:
+            return ""
         layers = preset_dict["layers"]
-        prompt_parts = []
+        parts = []
         for key in ["subject", "scene", "style", "lighting", "composition", "quality"]:
             if key in layers and layers[key]:
-                prompt_parts.append(random.choice(layers[key]))
-        return ", ".join(prompt_parts)
-
+                parts.append(random.choice(layers[key]))
+        return ", ".join(parts)
+    
     def _get_models(self, model_type: str) -> list:
         if not FORGE_CORE_AVAILABLE: return ["ForgeCore 未就绪"]
         try: return [m["name"] for m in ModelRegistry.scan_checkpoints(model_type)]
@@ -207,24 +243,25 @@ class ArtForgeApp:
                     # ✅ 新增：预设库选择 Dropdown
                     # 扫描 PRESETS_BASE 下所有文件夹作为选项
                     gr.Markdown("**📁 Python 预设** (presets_by_app)")
-                    available_libs = [d.name for d in self.PRESETS_BASE.iterdir() 
-                                      if d.is_dir() and not d.name.startswith('_')]
                     preset_library_dd = gr.Dropdown(
-                        choices=available_libs,
+                        choices=self.available_libs,
                         value=self.current_lib,
                         label=" 预设库 (Preset Library)"
                     )
-                    # 原有的分类 Dropdown
                     category_dd = gr.Dropdown(
                         choices=self.categories,
                         value=(self.categories[0] if self.categories else None),
                         label="主题分类 (Category)"
                     )
-                    # 原有的预设 Dropdown
-                    first_cat_presets = self.presets_map.get(self.categories[0], []) if self.categories else []
+
+                    _first_cat = self.categories[0] if self.categories else None
+                    _first_presets = (
+                        self.preset_engine.list_preset_names(self.current_lib, _first_cat)
+                        if (self.preset_engine and _first_cat) else []
+                    )
                     preset_dd = gr.Dropdown(
-                        choices=[p["name"] for p in first_cat_presets],
-                        value=(first_cat_presets[0]["name"] if first_cat_presets else None),
+                        choices=_first_presets,
+                        value=(_first_presets[0] if _first_presets else None),
                         label="预设场景 (Preset)"
                     )
 
@@ -396,38 +433,68 @@ class ArtForgeApp:
                 output_info = gr.Textbox(label="执行日志", lines=12)
 
         # ========== 事件绑定 ==========
-        # 1. 切换预设库 -> 更新分类和预设列表
+        # 1. 切换预设库 -> 更新分类 + 预设
         def on_lib_change(lib_name):
-            self._load_presets(lib_name) # 重新加载数据
-            # 准备返回的新选项
-            new_cats = self.categories
+            self.current_lib = lib_name
+            new_cats = (
+                self.preset_engine.list_categories(lib_name)
+                if self.preset_engine else []
+            )
+            self.categories = new_cats
             first_cat = new_cats[0] if new_cats else None
-            new_presets = self.presets_map.get(first_cat, []) if first_cat else []
-            first_preset_name = new_presets[0]["name"] if new_presets else None
-            # 返回更新后的 category_dd 和 preset_dd
-            return gr.update(choices=new_cats, value=first_cat), gr.update(choices=[p["name"] for p in new_presets], value=first_preset_name)
-        
+            self.current_category = first_cat
+
+            new_presets = (
+                self.preset_engine.list_preset_names(lib_name, first_cat)
+                if (self.preset_engine and first_cat) else []
+            )
+            first_preset = new_presets[0] if new_presets else None
+            self.current_preset = first_preset
+
+            return (
+                gr.update(choices=new_cats, value=first_cat),
+                gr.update(choices=new_presets, value=first_preset),
+            )
+
         preset_library_dd.change(
             fn=on_lib_change,
             inputs=[preset_library_dd],
-            outputs=[category_dd, preset_dd]
+            outputs=[category_dd, preset_dd],
         )
-        
-        # 2. 切换分类 -> 更新预设列表 (保留原有逻辑)
+
+        # 2. 切换分类 -> 更新预设
         def on_category_change(cat):
-            lst = self.presets_map.get(cat, [])
-            names = [p["name"] for p in lst]
-            return gr.update(choices=names, value=(names[0] if names else None))
-        
-        category_dd.change(fn=on_category_change, inputs=category_dd, outputs=preset_dd)
-        
+            self.current_category = cat
+            names = (
+                self.preset_engine.list_preset_names(self.current_lib, cat)
+                if self.preset_engine else []
+            )
+            first = names[0] if names else None
+            self.current_preset = first
+            return gr.update(choices=names, value=first)
+
+        category_dd.change(
+            fn=on_category_change,
+            inputs=category_dd,
+            outputs=preset_dd,
+        )
+
+        # 3. 切换预设 -> 更新 prompt
         def on_preset_change(cat, preset_name):
-            presets = self.presets_map.get(cat, [])
-            target = next((p for p in presets if p["name"] == preset_name), None)
-            if target: return self._build_prompt_from_preset(target)
+            self.current_category = cat
+            self.current_preset = preset_name
+            if not self.preset_engine:
+                return ""
+            preset = self.preset_engine.load_preset(self.current_lib, cat, preset_name)
+            if preset:
+                return self._build_prompt_from_preset(preset)
             return ""
-        
-        preset_dd.change(fn=on_preset_change, inputs=[category_dd, preset_dd], outputs=prompt_input)
+
+        preset_dd.change(
+            fn=on_preset_change,
+            inputs=[category_dd, preset_dd],
+            outputs=prompt_input,
+        )
 
         # JSON 模板：分类切换 → 更新项目列表
         def on_template_cat_change(cat):
@@ -1123,8 +1190,10 @@ class ArtForgeApp:
 
             
             # 1. 提示词处理
-            presets = self.presets_map.get(category, [])
-            preset_dict = next((p for p in presets if p["name"] == preset_name), None)
+            preset_dict = (
+                self.preset_engine.load_preset(self.current_lib, category, preset_name)
+                if self.preset_engine else None
+            )
             full_prompt = prompt if prompt else self._build_prompt_from_preset(preset_dict)
             
             # 2. 引擎路由
