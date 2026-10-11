@@ -3,8 +3,6 @@ import gradio as gr
 import os
 import sys
 import random
-import tempfile
-import importlib.util
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any, Optional
@@ -117,45 +115,6 @@ class ArtForgeApp:
             print(f"⚠️ JSON 模板加载失败: {e}")
             self.template_manager = None
         
-    def _load_presets(self, lib_name: str):
-        """动态扫描指定预设库目录 (兼容新格式)"""
-        self.current_lib = lib_name
-        target_dir = self.PRESETS_BASE / lib_name
-        print(f"🔍 正在扫描预设库: {lib_name} -> {target_dir}")
-        
-        # 清空旧数据
-        self.presets_map = {}
-        self.categories = []
-        
-        if not target_dir.exists():
-            print(f" 预设库目录不存在: {target_dir}")
-            return
-            
-        # 扫描逻辑：遍历子文件夹作为分类
-        for theme_dir in sorted(target_dir.iterdir()):
-            if not theme_dir.is_dir() or theme_dir.name.startswith('_'):
-                continue
-            cat_name = theme_dir.name
-            self.categories.append(cat_name)
-            self.presets_map[cat_name] = []
-            
-            # 遍历 .py 预设文件
-            for py_file in sorted(theme_dir.glob("*.py")):
-                if py_file.name.startswith('_') or py_file.name == '__init__.py':
-                    continue
-                try:
-                    spec = importlib.util.spec_from_file_location(py_file.stem, py_file)
-                    mod = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(mod)
-                    if hasattr(mod, "PRESET"):
-                        preset_data = mod.PRESET
-                        preset_data["file_path"] = str(py_file) # 保存路径供后续使用
-                        self.presets_map[cat_name].append(preset_data)
-                except Exception as e:
-                    print(f"⚠️ 加载预设失败 {py_file.name}: {e}")
-                    
-        print(f"✅ 库 [{lib_name}] 加载完成: {len(self.categories)} 个分类")
-
     def _load_loras(self):
         """扫描本地 LoRA 目录"""
         if not FORGE_CORE_AVAILABLE: return
@@ -191,23 +150,6 @@ class ArtForgeApp:
         if not FORGE_CORE_AVAILABLE: return ["ForgeCore 未就绪"]
         try: return [m["name"] for m in ModelRegistry.scan_checkpoints(model_type)]
         except: return ["扫描失败"]
-
-    def _save_image_automatically(self, image: Image.Image, prefix: str = "artforge") -> str:
-        """自动保存图片到 output 目录"""
-        if image is None:
-            return ""
-        try:
-            save_dir = Paths.OUTPUT_DIR if FORGE_CORE_AVAILABLE else APP_ROOT / "output"
-            save_dir.mkdir(parents=True, exist_ok=True)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            save_path = save_dir / f"{prefix}_{timestamp}.png"
-            if image.mode not in ('RGB', 'RGBA'):
-                image = image.convert('RGB')
-            image.save(save_path)
-            return str(save_path)
-        except Exception as e:
-            print(f"⚠️ 自动保存图片失败: {e}")
-            return ""
 
     def build_ui(self):
         """构建 Gradio 界面 (5个Tab)"""
@@ -671,11 +613,12 @@ class ArtForgeApp:
                 from forgecore.config.registry import ModelRegistry
                 from forgecore.skills.manager import skill_manager
                 
-                all_models = ModelRegistry.scan_checkpoints("sd15")
-                model_obj = next((m for m in all_models if m["name"] == model_name), None)
+                from forgecore.config.model_resolver import resolve_model
+                model_obj = resolve_model(model_name)
                 if not model_obj:
                     return None, "❌ 找不到模型路径"
                 model_path = model_obj["absolute_path"]
+
                 logs.append(f"📂 本地模型: {model_name}")
 
                 # 调用 ControlNet Skill
@@ -694,32 +637,22 @@ class ArtForgeApp:
                         controlnet_type="canny", controlnet_conditioning_scale=0.0, strength=strength
                     )
 
-                if res.get("status") == "success":
-                    out_path = res["result"].get("output_path")
-                    if out_path and Path(out_path).exists():
-                        final_image = Image.open(out_path)
-                        logs.append(f"✅ 本地生成成功")
-                    elif "image" in res["result"]:
-                        final_image = res["result"]["image"]
-                else:
+                from forgecore.skills.result_utils import extract_skill_image
+                final_image = extract_skill_image(res)
+                
+                if final_image is None:
                     logs.append(f"❌ 本地生成失败: {res.get('error')}")
+                else:
+                    logs.append("✅ 本地生成成功")
 
             # ==========================================
             # 核心：自动保存功能 (参考 app.py 原有逻辑)
             # ==========================================
             if final_image is not None:
-                from forgecore.config.paths import Paths
-                from datetime import datetime
-                
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                # 使用 Paths.OUTPUT_DIR，如果不可用则回退到 output 目录
-                save_dir = Paths.OUTPUT_DIR if hasattr(Paths, 'OUTPUT_DIR') else Path("output")
-                save_dir.mkdir(parents=True, exist_ok=True)
-                
-                save_path = save_dir / f"img2img_{timestamp}.png"
-                final_image.save(save_path)
-                logs.append(f"💾 图片已自动保存: {save_path}")
-                
+                from forgecore.image.saver import save_image
+                save_path = save_image(final_image, prefix="img2img")
+                if save_path:
+                    logs.append(f"💾 图片已自动保存: {save_path}")
                 return final_image, "\n".join(logs)
             else:
                 return None, "\n".join(logs) + "\n❌ 未生成有效图片"
@@ -786,43 +719,37 @@ class ArtForgeApp:
                 else:
                     if not model_name: return None, "❌ 请选择本地模型"
                     model_obj = next((m for m in ModelRegistry.scan_checkpoints("sd15") if m["name"] == model_name), None)
-                    if not model_obj: return None, "❌ 找不到模型"
-                    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                        ref_img.save(tmp.name)
-                        temp_img_path = tmp.name
+                    if not model_obj:
+                        return None, "❌ 找不到模型"
+    
+                    from forgecore.image.temp_utils import pil_to_temp_png, safe_remove
+                    from forgecore.skills.result_utils import extract_skill_image                        
+                    temp_img_path = pil_to_temp_png(ref_img)
                     logs.append(f"📂 图片暂存: {Path(temp_img_path).name}")
                     output_path = temp_img_path.replace(".png", f"_{skill_name}_out.png")
                     kwargs = {"image_path": temp_img_path, "output_path": output_path, "model_path": model_obj["absolute_path"]}
                     logs.append(f"📂 模型: {model_name}")
+
                     res = skill_manager.run(skill_name, **kwargs)
-                    success = False
-                    if res.get("status") == "success":
-                        res_data = res.get("result", {})
-                        out_p = res_data.get("output_path") or res_data.get("image_path")
-                        if out_p and Path(out_p).exists():
-                            final_image = Image.open(out_p)
-                            success = True
-                        elif "image" in res_data and isinstance(res_data["image"], Image.Image):
-                            final_image = res_data["image"]
-                            success = True
+                    final_image = extract_skill_image(res)
+
+                    # 降级重试（保持原逻辑）
+                    if final_image is None and "unexpected keyword argument" in str(res.get("error", "")):
+                        logs.append("🔄 降级重试...")
+                        kwargs.pop("output_path", None)
+                        res = skill_manager.run(skill_name, **kwargs)
+                        final_image = extract_skill_image(res)
+
+                    if final_image is not None:
                         logs.append("✅ 本地技能执行成功")
                     else:
                         logs.append(f"❌ 本地技能失败: {res.get('error')}")
-                        if "unexpected keyword argument" in res.get("error", ""):
-                            logs.append("🔄 降级重试...")
-                            kwargs.pop("output_path", None)
-                            res = skill_manager.run(skill_name, **kwargs)
-                            if res.get("status") == "success":
-                                res_data = res.get("result", {})
-                                out_p = res_data.get("output_path") or res_data.get("image_path")
-                                if out_p and Path(out_p).exists():
-                                    final_image = Image.open(out_p)
-                                    success = True
-                                    logs.append("✅ 降级成功")
-                    try: os.remove(temp_img_path)
-                    except: pass
+
+                    safe_remove(temp_img_path)
+
                 if final_image:
-                    save_path = self._save_image_automatically(final_image, prefix=f"magic_{skill_name}")
+                    from forgecore.image.saver import save_image
+                    save_path = save_image(final_image, prefix=f"magic_{skill_name}")
                     if save_path: logs.append(f"💾 已保存: {save_path}")
                     return final_image, "\n".join(logs)
                 return None, "\n".join(logs) + "\n❌ 未能生成图片"
@@ -1290,23 +1217,13 @@ class ArtForgeApp:
             found_in_type = "sd15"
             
             # 🔥 打印出所有扫描到的模型，方便排查
-            all_sd15 = [m["name"] for m in ModelRegistry.scan_checkpoints("sd15")]
-            all_sdxl = [m["name"] for m in ModelRegistry.scan_checkpoints("sdxl")]
-            log.append(f"🔍 扫描到 SD1.5 模型: {all_sd15}")
-            log.append(f"🔍 扫描到 SDXL 模型: {all_sdxl}")
-            
-            for m_type in ["sd15", "sdxl"]:
-                models = ModelRegistry.scan_checkpoints(m_type)
-                for m in models:
-                    if m["name"] == model_name:
-                        model_path = m["absolute_path"]
-                        found_in_type = m_type
-                        break
-                if model_path: break
-                
+            from forgecore.config.model_resolver import resolve_model
+            model_obj = resolve_model(model_name)
+            model_path = model_obj["absolute_path"] if model_obj else None
+            found_in_type = model_obj["type"] if model_obj else "sd15"
+
             if not model_path:
                 log.append(f"❌ 找不到模型: {model_name}")
-                log.append(f"💡 请检查模型是否在 E:\\SD_OpenVINO\\models\\sd-v1-5 或 sdxl 目录下")
                 return None, "\n".join(log)
                 
             log.append(f"📂 绝对路径: {model_path} (类型: {found_in_type})")

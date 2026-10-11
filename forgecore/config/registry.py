@@ -41,3 +41,21 @@ class ModelRegistry:
                 "type": model_type
             })
         return sorted(checkpoints, key=lambda x: x["name"])
+        
+    # 在 ModelRegistry 里加
+    @classmethod
+    def scan_checkpoints_cached(cls, model_type: str) -> list:
+        if model_type not in cls._checkpoint_cache:
+            cls._checkpoint_cache[model_type] = cls.scan_checkpoints(model_type)
+        return cls._checkpoint_cache[model_type]
+
+    @classmethod
+    def scan_loras_cached(cls, model_type: str = "sd15") -> list:
+        if model_type not in cls._lora_cache:
+            cls._lora_cache[model_type] = cls.scan_loras(model_type)
+        return cls._lora_cache[model_type]
+
+    @classmethod
+    def invalidate_cache(cls):
+        cls._checkpoint_cache.clear()
+        cls._lora_cache.clear()      
