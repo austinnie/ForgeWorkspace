@@ -1,6 +1,6 @@
 # layers/__init__.py
 """
-ArtForge 6 层提示词系统
+ArtForge 7 层提示词系统
 
 层级顺序（组合时按这个顺序拼接）：
   1. subject      主体    天狗、九尾狐、唐仕女、艺伎
@@ -11,7 +11,6 @@ ArtForge 6 层提示词系统
   6. inscription  题词印章 书法、落款、朱印、做旧
   7. quality      画质    masterpiece, 8k, detailed
 
-注：叫「6 层」是沿用 LayerForge 的命名习惯，实际是 7 层。
 """
 
 from typing import Dict, List

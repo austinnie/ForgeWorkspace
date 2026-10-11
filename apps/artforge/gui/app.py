@@ -1397,7 +1397,7 @@ class ArtForgeApp:
                     from forgecore.post_process.seal_generator import SealGenerator
                     sg = SealGenerator()
                     image = sg.apply_scheme(image, ARTIST_NAME, scheme="contrast", texture=seal_texture)
-                    log.append("🔴 印章完成(质感: {seal_texture})")
+                    log.append(f"🔴 印章完成(质感: {seal_texture})")
                 except Exception as e: log.append(f"⚠️ 印章失败: {e}")
 
             # 3. 装裱 (把画心+题词+印章一起装裱)
