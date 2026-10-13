@@ -1,10 +1,10 @@
 PRESET = {
-    "name": "-name=梧桐树",
-    "category": "-cat=tree",
+    "name": "-name=日本神话天照",
+    "category": "japanese",
     "tags": [""],
     "layers": {
-        "subject": ["-subject=一棵高大的梧桐树"],
-        "scene": ["-scene=凤栖梧树木秀枝繁"],
+        "subject": ["-subject=日本神话中的天照大神"],
+        "scene": ["-scene=从洞中现身照亮世界"],
         "style": ["中国传统插画风格", "精美细腻"],
         "lighting": ["柔和光线"],
         "composition": ["居中构图"],

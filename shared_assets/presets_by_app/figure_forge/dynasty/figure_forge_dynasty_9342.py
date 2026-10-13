@@ -1,10 +1,10 @@
 PRESET = {
-    "name": "-name=火星基地",
-    "category": "-cat=modern",
-    "tags": [""],
+    "name": "清朝龙袍",
+    "category": "dynasty",
+    "tags": ["清代服饰", "皇帝龙袍"],
     "layers": {
-        "subject": ["-subject=人类火星基地"],
-        "scene": ["-scene=红色星球上的未来城市"],
+        "subject": ["身穿龙袍的乾隆皇帝"],
+        "scene": ["在养心殿批阅奏章"],
         "style": ["中国传统插画风格", "精美细腻"],
         "lighting": ["柔和光线"],
         "composition": ["居中构图"],

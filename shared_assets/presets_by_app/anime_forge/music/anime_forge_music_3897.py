@@ -1,10 +1,10 @@
 PRESET = {
-    "name": "-name=陆羽茶经",
-    "category": "-cat=tea_ceremony",
-    "tags": [""],
+    "name": "动漫笛声",
+    "category": "music",
+    "tags": ["动漫", "古风", "笛子"],
     "layers": {
-        "subject": ["-subject=茶圣陆羽品茗"],
-        "scene": ["-scene=编写茶经传播茶文化"],
+        "subject": ["一位吹笛少年"],
+        "scene": ["在月下竹林吹笛"],
         "style": ["中国传统插画风格", "精美细腻"],
         "lighting": ["柔和光线"],
         "composition": ["居中构图"],

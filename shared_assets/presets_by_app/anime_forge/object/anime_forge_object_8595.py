@@ -1,10 +1,10 @@
 PRESET = {
-    "name": "-name=东海龙宫",
-    "category": "-cat=water",
-    "tags": [""],
+    "name": "动漫笔架",
+    "category": "object",
+    "tags": ["动漫", "古风", "文房"],
     "layers": {
-        "subject": ["-subject=深海中的龙宫"],
-        "scene": ["-scene=龙王居所水晶宫殿"],
+        "subject": ["一个精美的笔架"],
+        "scene": ["上面放置着毛笔"],
         "style": ["中国传统插画风格", "精美细腻"],
         "lighting": ["柔和光线"],
         "composition": ["居中构图"],
