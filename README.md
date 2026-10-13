@@ -201,6 +201,8 @@ REPLICATE_API_TOKEN=
 # ---------- Stability AI（付费） ----------
 STABILITY_API_KEY=
 
+# ----------  SiCore TokenWorks（付费） ----------
+TOKENWORKS_KEY=
 
 # ---------- 后处理 ----------
 # 题词字体（放在 assets/fonts/ 下），当前用的是小篆，可以支持更多字体库

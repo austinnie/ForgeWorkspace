@@ -74,9 +74,29 @@ def build_generation_tab(app) -> None:
                     value="api", label="生成模式",
                 )
                 api_provider = gr.Dropdown(
-                    choices=["pollinations", "agnes", "siliconflow", "tongyi", "yige", "hunyuan"],
+                    choices=["pollinations", "agnes", "siliconflow", "tongyi", "yige", "hunyuan","openrouter", "orcarouter"],
                     value="agnes", label="API 提供商",
                 )
+                
+                # ===== 新增：OrcaRouter 模型选择（默认隐藏）=====
+                with gr.Group(visible=False) as orcarouter_config:
+                    orcarouter_model_dd = gr.Dropdown(
+                        choices=[
+                            "openai/gpt-4o-mini (推荐)",
+                            "openai/gpt-4o",
+                            "anthropic/claude-opus-4.6",
+                            "anthropic/claude-sonnet-4.6",
+                            "google/gemini-2.5-pro",
+                            "deepseek/deepseek-v4-flash",
+                            "xai/grok-3",
+                            "qwen/qwen3.7-max",
+                            "kling/kling-v3-omni",
+                            "byteplus/dreamina-seedance-2-0-260128",
+                        ],
+                        value="openai/gpt-4o-mini",
+                        label="OrcaRouter 模型",
+                    )  
+                    
                 with gr.Group(visible=False) as local_config:
                     model_type_dd = gr.Dropdown(
                         choices=["SD1.5", "SDXL"], value="SD1.5", label="模型类型"
@@ -181,6 +201,16 @@ def build_generation_tab(app) -> None:
             output_info = gr.Textbox(label="执行日志", lines=12)
 
     # ========== 事件绑定 ==========
+    def on_provider_change(provider):
+        is_orcarouter = (provider == "orcarouter")
+        return gr.update(visible=is_orcarouter)
+
+    api_provider.change(
+        fn=on_provider_change,
+        inputs=api_provider,
+        outputs=orcarouter_config,
+    )
+    
     def on_lib_change(lib_name):
         app.current_lib = lib_name
         new_cats = app.preset_engine.list_categories(lib_name) if app.preset_engine else []
@@ -276,7 +306,7 @@ def build_generation_tab(app) -> None:
     generate_btn.click(
         fn=app._generate_image,
         inputs=[
-            engine_mode, api_provider, model_dd,
+            engine_mode, api_provider, model_dd,orcarouter_model_dd,
             category_dd, preset_dd, composition_dd,
             prompt_input, negative_input,
             lora_dd, lora_weight,

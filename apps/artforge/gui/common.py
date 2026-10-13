@@ -25,14 +25,33 @@ def load_env_config() -> dict:
         pass
 
     keys = [
-        "POLLINATIONS_API_KEY", "POLLINATIONS_MODEL",
-        "POLLINATIONS_VIDEO_MODEL", "POLLINATIONS_AUDIO_MODEL",
-        "AGNES_API_KEY", "AGNES_BASE_URL",
-        "AGNES_IMAGE_MODEL", "AGNES_TEXT_MODEL",
-        "AGNES_VIDEO_MODEL", "AGNES_VISION_MODEL",
-        "SILICONFLOW_API_KEY", "SILICONFLOW_MODEL",
-        "HF_API_TOKEN", "HF_MODEL",
-        "OPENROUTER_API_KEY", "OPENROUTER_MODEL",
+        "POLLINATIONS_API_KEY", 
+        "POLLINATIONS_MODEL",
+        "POLLINATIONS_VIDEO_MODEL", 
+        "POLLINATIONS_AUDIO_MODEL",
+        "AGNES_API_KEY", 
+        "AGNES_BASE_URL",
+        "AGNES_IMAGE_MODEL", 
+        "AGNES_TEXT_MODEL",
+        "AGNES_VIDEO_MODEL", 
+        "AGNES_VISION_MODEL",
+        "SILICONFLOW_API_KEY", 
+        "SILICONFLOW_MODEL",
+        "HF_API_TOKEN", 
+        "HF_MODEL",
+        "OPENROUTER_API_KEY", 
+        "OPENROUTER_MODEL",
+
+        # ===== 新增 OrcaRouter 配置 =====
+        "ORCAROUTER_API_KEY", 
+        "ORCAROUTER_BASE_URL",
+        "ORCAROUTER_CHAT_MODEL", 
+        "ORCAROUTER_IMAGE_MODEL",
+        "ORCAROUTER_TTS_MODEL", 
+        "ORCAROUTER_VIDEO_MODEL",
+        "ORCAROUTER_VISION_MODEL", 
+        "ORCAROUTER_REASONING_MODEL",
+    
     ]
     return {k: os.getenv(k) for k in keys}
 

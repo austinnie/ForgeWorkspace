@@ -179,7 +179,7 @@ class ArtForgeApp:
 
     # ---------- 生成调度 ----------
 
-    def _generate_image(self, engine_mode, api_provider, model_name, category, preset_name, composition,
+    def _generate_image(self, engine_mode, api_provider, model_name, orcarouter_model, category, preset_name, composition,
                         prompt, negative, lora_name, lora_weight, steps, cfg, seed, count,
                         use_aging, aging_strength, aging_texture,
                         use_inscription, inscription_format, inscription_position,
@@ -211,6 +211,7 @@ class ArtForgeApp:
                     img, api_log = self._generate_with_api(
                         api_provider, full_prompt, negative, width, height, steps, cfg,
                         seed + i if seed != -1 else None,
+                        orcarouter_model=orcarouter_model,
                     )
                     log.extend(api_log.split('\n'))
                     if img:
@@ -269,12 +270,17 @@ class ArtForgeApp:
             import traceback
             return None, None, f"❌ 生成崩溃: {str(e)}\n\n{traceback.format_exc()}"
 
-    def _generate_with_api(self, provider, prompt, negative, w, h, steps, cfg, seed):
+    def _generate_with_api(self, provider, prompt, negative, w, h, steps, cfg, seed, orcarouter_model=None):
         log = []
         try:
             from forgecore.engines import create_engine
             from gui.common import load_env_config
             config = load_env_config()
+
+            # OrcaRouter 特殊处理：从 UI 选择模型
+            if provider == "orcarouter" and orcarouter_model:
+                config["ORCAROUTER_IMAGE_MODEL"] = orcarouter_model.replace(" (推荐)", "").replace(" (推荐)", "")
+            
             engine = create_engine(provider, config)
             image = engine.generate_single(
                 prompt=prompt, negative=negative, width=w, height=h,

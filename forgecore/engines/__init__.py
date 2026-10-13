@@ -20,6 +20,9 @@ from .freellmapi import FreeLLMAPIEngine
 from .siliconflow import SiliconFlowEngine
 from .openrouter import OpenRouterEngine
 
+# 20261013新增导入
+from .orcarouter import OrcaRouterEngine
+
 def create_engine(provider: str, config: dict) -> BaseEngine:
     """创建 API 引擎实例"""
     
@@ -110,7 +113,20 @@ def create_engine(provider: str, config: dict) -> BaseEngine:
             api_key=config.get("OPENROUTER_API_KEY"),
             model=config.get("OPENROUTER_MODEL", "bytedance-seed/seedream-4.5"),
         )
-        
+
+    # 20261013 新增：
+    elif provider == "orcarouter":
+        return OrcaRouterEngine(
+            api_key=config.get("ORCAROUTER_API_KEY"),
+            base_url=config.get("ORCAROUTER_BASE_URL"),
+            chat_model=config.get("ORCAROUTER_CHAT_MODEL"),
+            image_model=config.get("ORCAROUTER_IMAGE_MODEL"),
+            tts_model=config.get("ORCAROUTER_TTS_MODEL"),
+            video_model=config.get("ORCAROUTER_VIDEO_MODEL"),
+            vision_model=config.get("ORCAROUTER_VISION_MODEL"),
+            reasoning_model=config.get("ORCAROUTER_REASONING_MODEL"),
+        )
+    
     else:
         raise ValueError(f"不支持的 API 提供商: {provider}")
 
@@ -135,5 +151,7 @@ __all__ = [
     'FreeMultimodalProxyEngine',
     'FreeLLMAPIEngine',
     'SiliconFlowEngine',
-    'OpenRouterEngine',    
+    'OpenRouterEngine',  
+
+    'OrcaRouterEngine',   # 20261013新增导入 
 ]
