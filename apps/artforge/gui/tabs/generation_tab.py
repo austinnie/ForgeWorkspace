@@ -93,7 +93,7 @@ def build_generation_tab(app) -> None:
                             "kling/kling-v3-omni",
                             "byteplus/dreamina-seedance-2-0-260128",
                         ],
-                        value="openai/gpt-4o-mini",
+                        value="openai/gpt-4o-mini (推荐)",
                         label="OrcaRouter 模型",
                     )  
                     
@@ -211,6 +211,18 @@ def build_generation_tab(app) -> None:
         outputs=orcarouter_config,
     )
     
+    def on_orcarouter_model_change(model_value):
+        """当用户选择 OrcaRouter 模型时，更新 app 实例的模型配置"""
+        if hasattr(app, 'orcarouter_model'):
+            app.orcarouter_model = model_value
+            print(f"  [OrcaRouter] 模型已切换为: {model_value}")
+        return None
+    
+    orcarouter_model_dd.change(
+        fn=on_orcarouter_model_change,
+        inputs=orcarouter_model_dd,
+    )
+    
     def on_lib_change(lib_name):
         app.current_lib = lib_name
         new_cats = app.preset_engine.list_categories(lib_name) if app.preset_engine else []
@@ -302,11 +314,10 @@ def build_generation_tab(app) -> None:
 
     refresh_model_btn.click(on_refresh_models, inputs=model_type_dd, outputs=model_dd)
     model_type_dd.change(on_refresh_models, inputs=model_type_dd, outputs=model_dd)
-
     generate_btn.click(
         fn=app._generate_image,
         inputs=[
-            engine_mode, api_provider, model_dd,orcarouter_model_dd,
+            engine_mode, api_provider, model_dd,
             category_dd, preset_dd, composition_dd,
             prompt_input, negative_input,
             lora_dd, lora_weight,
