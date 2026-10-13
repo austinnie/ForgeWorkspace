@@ -94,3 +94,6 @@ project_dump.txt
 *.mp4
 *.mp3
 apps/promptforge/skills/music_generator/soundfonts/*.sf2
+# ControlNet cache
+forgecore/skills/controlnet/cache/
+project_code_dump.txt
