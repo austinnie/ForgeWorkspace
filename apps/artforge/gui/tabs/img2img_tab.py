@@ -11,7 +11,7 @@ from forgecore.config.model_resolver import resolve_model
 from forgecore.skills.result_utils import extract_skill_image
 from forgecore.image.saver import save_image
 from forgecore.engines.helpers import agnes_img2img
-
+import os
 
 def build_img2img_tab(app) -> None:
     gr.Markdown("### 🖼️ 图生图 / ControlNet 工作台")
@@ -63,23 +63,73 @@ def build_img2img_tab(app) -> None:
     def run_img2img(ref_img, mode, model_name, prompt, negative, cn_type, strength):
         logs = ["🚀 启动图生图 / ControlNet 流水线..."]
 
+        # --- 调试代码开始 ---
+        from gui.common import load_env_config
+        config = load_env_config()
+        api_key = config.get("AGNES_API_KEY", "")
+        if not api_key:
+            return None, "❌ 错误: AGNES_API_KEY 未配置！请检查 .env 文件。"
+        if len(api_key) < 10:
+            return None, f"❌ 错误: AGNES_API_KEY 格式似乎不正确 (长度: {len(api_key)})。"
+        logs.append(f"✅ API Key 已加载 (前8位: {api_key[:8]}...)")
+        # --- 调试代码结束 ---
+    
         if ref_img is None:
             return None, "❌ 必须上传参考图！图生图/ControlNet 需要底图来锁定特征。"
 
         try:
             final_image = None
 
+            # ==================== Agnes API 分支 ====================
             if mode == "agnes":
                 logs.append("☁️ 使用 Agnes API 图生图")
-                from gui.common import load_env_config
-                final_image = agnes_img2img(
-                    prompt=prompt,
-                    image=ref_img,
-                    strength=strength,
-                    width=768, height=1024,
-                    config=load_env_config(),
-                )
-                logs.append("✅ Agnes API 图生图完成")
+                
+                try:
+                    final_image = agnes_img2img(
+                        prompt=prompt,
+                        image=ref_img,
+                        strength=strength,
+                        width=768, height=1024,
+                        config=config,
+                    )
+                    logs.append("✅ Agnes API 图生图完成")
+                    
+                except Exception as e:
+                    # 核心降级逻辑：Agnes 失败 → 自动切到 Pollinations
+                    error_msg = str(e)
+                    logs.append(f"⚠️ Agnes 失败 ({error_msg[:80]}...)")
+                    logs.append("🔄 自动降级到 Pollinations API 图生图...")
+                    
+                    try:
+                        from forgecore.engines import create_engine
+                        
+                        # 显式传入环境变量，避免依赖全局 .env 加载状态
+                        poll_config = {
+                            "POLLINATIONS_MODEL": os.getenv("POLLINATIONS_MODEL", "flux"),
+                            "POLLINATIONS_API_KEY": os.getenv("POLLINATIONS_API_KEY", ""),
+                        }
+                        
+                        engine = create_engine("pollinations", config=poll_config)
+                        
+                        # ️ 关键修复：Pollinations 要求宽高必须是 8 的倍数
+                        safe_width = (768 // 8) * 8
+                        safe_height = (1024 // 8) * 8
+                        
+                        final_image = engine.image_to_image(
+                            prompt=prompt,
+                            image=ref_img,
+                            strength=strength,
+                            width=safe_width, 
+                            height=safe_height,
+                        )
+                        logs.append("✅ Pollinations 降级图生图成功")
+                        
+                    except Exception as fallback_e:
+                        logs.append(f"❌ Pollinations 降级也失败: {fallback_e}")
+                        return None, "\n".join(logs)
+
+        
+                
             else:
                 if not model_name:
                     return None, "❌ 选择本地引擎时，必须选择本地模型。"
